@@ -209,7 +209,6 @@ private struct DriftRow: View {
                 Text(triple.status.label)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .textCase(.camelCase)
             }
             Spacer()
             hashLabel("installed", triple.installed, tint: .secondary)

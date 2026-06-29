@@ -37,6 +37,9 @@ final class HarnessStore {
     /// Plugin drift detector. Backs PluginPane.
     var pluginMirror = PluginMirrorStore()
 
+    /// Memory Fabric explorer. Backs Memory pane.
+    var memory = MemoryStore()
+
     // MARK: - Init
 
     init() {
@@ -88,11 +91,10 @@ final class HarnessStore {
         latestImprovementAt = HarnessClient.latestImprovementTimestamp()
         snapshotCount = HarnessClient.snapshotCount()
         continuityCount = HarnessClient.continuityCount()
-        memoryRecordCount = await MemoryFabricClient.count(scope: ncodeDir.path)
-        recentRecords = await MemoryFabricClient.recent(scope: ncodeDir.path, limit: 20)
-        if recentRecords.isEmpty {
-            statusMessage = "Status refreshed"
-        }
+        // Memory count is fetched lazily by MemoryPane via MemoryStore.bootstrap();
+        // we don't duplicate the call here — Status pane can show count from
+        // store.memory.totalCount if it's been queried.
+        statusMessage = "Status refreshed"
     }
 
     struct TestSummary: Equatable {
