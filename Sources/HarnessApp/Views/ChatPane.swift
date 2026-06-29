@@ -363,9 +363,7 @@ private struct ChatRow: View {
     private func blockView(_ block: AssistantBlock) -> some View {
         switch block {
         case .text(let s):
-            Text(s)
-                .font(.system(.body))
-                .textSelection(.enabled)
+            MarkdownText(s)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(Color.purple.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
