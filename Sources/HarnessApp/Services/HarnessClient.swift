@@ -17,10 +17,12 @@ enum HarnessClient {
 
     static func run(command: [String], cwd: URL?) async -> RunResult {
         precondition(!command.isEmpty, "command must have at least one element")
+        var resolved = command
+        resolved[0] = resolveExecutable(command[0])
         let start = Date()
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: command[0])
-        process.arguments = Array(command.dropFirst())
+        process.executableURL = URL(fileURLWithPath: resolved[0])
+        process.arguments = Array(resolved.dropFirst())
         if let cwd { process.currentDirectoryURL = cwd }
 
         let stdoutPipe = Pipe()
@@ -47,6 +49,33 @@ enum HarnessClient {
                 duration: Date().timeIntervalSince(start)
             )
         }
+    }
+
+    /// Resolve a bare command name (e.g. "python3", "bash") to a full path via
+    /// the user's PATH. `Process.executableURL` doesn't search PATH unlike bash.
+    static func resolveExecutable(_ name: String) -> String {
+        if name.hasPrefix("/") || name.contains("/") {
+            return name  // already a path
+        }
+        let candidates = [
+            "/usr/local/bin/\(name)",
+            "/opt/homebrew/bin/\(name)",
+            "/Users/\(NSUserName())/.homebrew/bin/\(name)",
+            "/usr/bin/\(name)",
+            "/bin/\(name)",
+        ]
+        for p in candidates where FileManager.default.isExecutableFile(atPath: p) {
+            return p
+        }
+        if let envPath = ProcessInfo.processInfo.environment["PATH"] {
+            for dir in envPath.split(separator: ":") {
+                let p = "\(dir)/\(name)"
+                if FileManager.default.isExecutableFile(atPath: p) {
+                    return p
+                }
+            }
+        }
+        return name
     }
 
     // MARK: - Harness paths

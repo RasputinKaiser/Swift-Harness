@@ -106,14 +106,27 @@ struct ProjectsView: View {
 
     @ViewBuilder
     private var chatDetail: some View {
-        if selectedProjectID == nil {
+        if store.bridge.isRunning || store.bridge.isStarting {
+            // Active chat session: bridge is running
+            ChatPane()
+        } else if let sid = selectedSessionID,
+                  let project = store.projects.projects.first(where: { $0.id == selectedProjectID }),
+                  let s = store.projects.sessions(for: project).first(where: { $0.sessionId == sid }) {
+            // Historical session picked: show transcript
+            SessionTranscriptView(session: s)
+        } else if selectedProjectID == nil {
             ContentUnavailableView(
                 "Pick a project, or start a new chat",
                 systemImage: "bubble.left.and.bubble.right",
                 description: Text("Selecting a project shows its sessions here. Starting a new chat opens a fresh NCode session in that project's cwd.")
             )
         } else {
-            ChatPane()
+            // Project picked but no session — show a hint to start a chat
+            ContentUnavailableView(
+                "No session selected",
+                systemImage: "plus.message",
+                description: Text("Click \"Start new chat\" above to begin, or click a session in the middle column to view its transcript.")
+            )
         }
     }
 
@@ -135,6 +148,10 @@ struct ProjectsView: View {
         await MainActor.run {
             store.bridge.start(cwd: cwd)
         }
+        // Give ncode a moment to write its initial transcript file, then refresh
+        // so the new session appears in the middle column list.
+        try? await Task.sleep(nanoseconds: 1_500_000_000)
+        store.projects.refresh()
     }
 }
 

@@ -41,14 +41,14 @@ final class SessionActivityStore {
     init() {}
 
     @MainActor
-    func attach(to session: SessionDescriptor) {
+    func attach(to session: SessionDescriptor, loadHistory: Bool = true) {
         detach()
         let url = session.transcriptURL
         status = .attaching(url)
         attachedSession = session
         events = []
         totalEventsObserved = 0
-        beginTailing(url: url)
+        beginTailing(url: url, loadHistory: loadHistory)
     }
 
     @MainActor
@@ -67,7 +67,7 @@ final class SessionActivityStore {
     private var offset: UInt64 = 0
     private let ioQueue = DispatchQueue(label: "com.rasputinkaiser.harnessapp.session-tailer")
 
-    private func beginTailing(url: URL) {
+    private func beginTailing(url: URL, loadHistory: Bool = true) {
         ioQueue.async { [weak self] in
             guard let self else { return }
 
@@ -86,13 +86,17 @@ final class SessionActivityStore {
                 return
             }
 
-            // Seek to end so we don't replay the entire history. (Phase 1.1 tweak:
-            // could add a "--replay-history" toggle later.)
-            let endOffset = (try? fh.seekToEnd()) ?? 0
-            offset = endOffset
-            try? fh.seek(toOffset: offset)
+            // History mode: start from beginning (offset 0). Tail mode: skip to end.
+            if loadHistory {
+                offset = 0
+                try? fh.seek(toOffset: 0)
+            } else {
+                let endOffset = (try? fh.seekToEnd()) ?? 0
+                offset = endOffset
+                try? fh.seek(toOffset: offset)
+            }
 
-            // Drain everything written between seekToEnd and now (small race window).
+            // Drain everything written before source resumes (and entire file if loadHistory).
             self.drain(from: fh, url: url)
 
             let src = DispatchSource.makeFileSystemObjectSource(

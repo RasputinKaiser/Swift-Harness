@@ -28,11 +28,11 @@ final class HookEventStore {
     init() {}
 
     @MainActor
-    func start() {
+    func start(loadHistory: Bool = true) {
         detach()
         let url = HarnessClient.ncodeDir.appendingPathComponent("hook_events.jsonl", conformingTo: .text)
         if FileManager.default.fileExists(atPath: url.path) {
-            beginTailing(at: url)
+            beginTailing(at: url, loadHistory: loadHistory)
         } else {
             status = .waiting(url)
             watchForCreation()
@@ -99,17 +99,23 @@ final class HookEventStore {
         }
     }
 
-    private func beginTailing(at url: URL) {
+    private func beginTailing(at url: URL, loadHistory: Bool = true) {
         ioQueue.async { [weak self] in
             guard let self else { return }
             guard let fh = try? FileHandle(forReadingFrom: url) else {
                 Task { @MainActor in self.status = .failed("open failed") }
                 return
             }
-            // Seek to end — we only want events fired after the app started watching
-            let endOffset = (try? fh.seekToEnd()) ?? 0
-            self.offset = endOffset
-            try? fh.seek(toOffset: self.offset)
+            // In history mode: start from beginning (offset 0).
+            // In tail mode: seek to end so we only see events after attach.
+            if loadHistory {
+                self.offset = 0
+                try? fh.seek(toOffset: 0)
+            } else {
+                let endOffset = (try? fh.seekToEnd()) ?? 0
+                self.offset = endOffset
+                try? fh.seek(toOffset: self.offset)
+            }
 
             let fd = fh.fileDescriptor
             let src = DispatchSource.makeFileSystemObjectSource(
