@@ -183,6 +183,39 @@ final class BrowserIPCServer {
             let (html, text, count) = await bm.extract(selector: selector, attr: attr)
             return BrowserReply(id: cmd.id, ok: true,
                                 result: AnyCodable(["html": html, "text": text, "count": count]), error: nil)
+        case "browser_click":
+            let selector = (cmd.args?["selector"]?.value as? String) ?? ""
+            guard let bm = browserModel else {
+                return BrowserReply(id: cmd.id, ok: false, result: nil, error: "browser not attached")
+            }
+            let (clicked, rect, error) = await bm.click(selector: selector)
+            if let rect = rect {
+                AppLogger.process.info("browser_click: \(selector) at [\(rect.origin.x),\(rect.origin.y) \(rect.width)x\(rect.height)]")
+            }
+            return BrowserReply(id: cmd.id, ok: clicked,
+                                result: AnyCodable([
+                                    "matched": clicked,
+                                    "clicked": clicked,
+                                    "rect": rect != nil ? ["x": rect!.origin.x, "y": rect!.origin.y,
+                                                           "w": rect!.width, "h": rect!.height] : nil
+                                ]),
+                                error: error)
+        case "browser_screenshot":
+            let selector = cmd.args?["selector"]?.value as? String
+            let maxWidth = (cmd.args?["max_width"]?.value as? Double).map(Int.init)
+            guard let bm = browserModel else {
+                return BrowserReply(id: cmd.id, ok: false, result: nil, error: "browser not attached")
+            }
+            let shot = await bm.screenshot(selector: selector, maxWidth: maxWidth)
+            return BrowserReply(id: cmd.id, ok: shot.error == nil,
+                                result: AnyCodable([
+                                    "path": shot.path ?? "",
+                                    "width": shot.width,
+                                    "height": shot.height,
+                                    "b64": shot.b64 ?? "",
+                                    "b64_truncated": shot.b64Truncated
+                                ]),
+                                error: shot.error)
         default:
             return BrowserReply(id: cmd.id, ok: false, result: nil, error: "unknown tool: \(cmd.tool)")
         }

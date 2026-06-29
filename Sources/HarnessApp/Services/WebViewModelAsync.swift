@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import WebKit
 
 /// WKNavigationDelegate coordinator that resumes a continuation when
@@ -140,5 +141,111 @@ extension WebViewModel {
         let text = (dict["text"] as? String) ?? ""
         let count = (dict["count"] as? Int) ?? 0
         return (html: html, text: text, count: count)
+    }
+
+    /// Click an element matching a CSS selector. Scrolls into view first,
+    /// dispatches a synthetic click via JS, and returns the bounding rect
+    /// so the caller can show an overlay highlight.
+    @MainActor
+    func click(selector: String) async -> (clicked: Bool, rect: CGRect?, error: String?) {
+        guard let wv = webView else {
+            return (false, nil, "WKWebView not attached")
+        }
+        // JS: scroll into view + get bounding rect + click
+        let js = """
+        (function() {
+            var el = document.querySelector('\(selector.replacingOccurrences(of: "'", with: "\\'"))');
+            if (!el) return JSON.stringify({found: false});
+            el.scrollIntoView({behavior: 'instant', block: 'center'});
+            var rect = el.getBoundingClientRect();
+            el.click();
+            return JSON.stringify({
+                found: true,
+                clicked: true,
+                x: rect.x, y: rect.y, width: rect.width, height: rect.height
+            });
+        })()
+        """
+        let (result, error) = await evalJS(js)
+        if let error = error {
+            return (false, nil, error)
+        }
+        guard let result = result,
+              let data = result.data(using: .utf8),
+              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return (false, nil, "failed to parse click result")
+        }
+        guard dict["found"] as? Bool == true else {
+            return (false, nil, "element not found for selector: \(selector)")
+        }
+        let x = (dict["x"] as? Double) ?? 0
+        let y = (dict["y"] as? Double) ?? 0
+        let width = (dict["width"] as? Double) ?? 0
+        let height = (dict["height"] as? Double) ?? 0
+        return (true, CGRect(x: x, y: y, width: width, height: height), nil)
+    }
+
+    /// Screenshot the current WKWebView (or a selector-scoped region).
+    /// Writes the PNG to a cache file and returns the path + base64 (if < 200KB).
+    @MainActor
+    func screenshot(selector: String?, maxWidth: Int?) async -> (path: String?, width: Int, height: Int, b64: String?, b64Truncated: Bool, error: String?) {
+        guard let wv = webView else {
+            return (nil, 0, 0, nil, false, "WKWebView not attached")
+        }
+
+        let config = WKSnapshotConfiguration()
+        // Full-page snapshot (selector-scoped cropping deferred to Phase 4)
+        config.afterScreenUpdates = true
+
+        let image: NSImage = await withCheckedContinuation { cont in
+            wv.takeSnapshot(with: config) { img, _ in
+                cont.resume(returning: img ?? NSImage())
+            }
+        }
+
+        // Scale if maxWidth specified
+        var finalImage = image
+        if let maxW = maxWidth, Int(image.size.width) > maxW {
+            let scale = CGFloat(maxW) / image.size.width
+            let newSize = NSSize(width: image.size.width * scale, height: image.size.height * scale)
+            let scaled = NSImage(size: newSize)
+            scaled.lockFocus()
+            image.draw(in: NSRect(origin: .zero, size: newSize))
+            scaled.unlockFocus()
+            finalImage = scaled
+        }
+
+        guard let tiffData = finalImage.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiffData),
+              let pngData = bitmap.representation(using: .png, properties: [:]) else {
+            return (nil, 0, 0, nil, false, "failed to create PNG")
+        }
+
+        // Write to cache dir
+        let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("HarnessApp/screenshots", conformingTo: .directory)
+        if let cacheDir {
+            try? FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
+        }
+        let filename = "screenshot_\(UUID().uuidString.prefix(8)).png"
+        let filePath = (cacheDir ?? URL(fileURLWithPath: NSTemporaryDirectory()))
+            .appendingPathComponent(filename, conformingTo: .text)
+        do {
+            try pngData.write(to: filePath)
+        } catch {
+            return (nil, 0, 0, nil, false, "write failed: \(error.localizedDescription)")
+        }
+
+        let width = Int(finalImage.size.width)
+        let height = Int(finalImage.size.height)
+
+        // Dual-channel: embed base64 if < 200KB
+        let maxB64 = 200 * 1024
+        let b64String = pngData.base64EncodedString()
+        if b64String.count < maxB64 {
+            return (filePath.path, width, height, b64String, false, nil)
+        } else {
+            return (filePath.path, width, height, nil, true, nil)
+        }
     }
 }
