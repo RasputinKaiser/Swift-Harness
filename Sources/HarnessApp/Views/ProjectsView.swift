@@ -107,8 +107,8 @@ struct ProjectsView: View {
     @ViewBuilder
     private var chatDetail: some View {
         if store.bridge.isRunning || store.bridge.isStarting {
-            // Active chat session: bridge is running
-            ChatPane()
+            // Active chat session: split-view with companion browser
+            ChatSplitView()
         } else if let sid = selectedSessionID,
                   let project = store.projects.projects.first(where: { $0.id == selectedProjectID }),
                   let s = store.projects.sessions(for: project).first(where: { $0.sessionId == sid }) {

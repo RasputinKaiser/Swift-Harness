@@ -24,6 +24,28 @@ struct HarnessApp: App {
                 Button("Take Snapshot…") { Task { await store.snapshot(reason: "via harness-app") } }
                     .keyboardShortcut("s", modifiers: [.command, .shift])
             }
+            CommandGroup(after: .toolbar) {
+                Button("New Chat") {
+                    if store.bridge.isRunning { store.bridge.stop() }
+                    Task { await store.bridge.start(cwd: nil) }
+                }
+                .keyboardShortcut("n", modifiers: [.command, .shift])
+                Button("Clear Transcript") {
+                    Task { @MainActor in store.bridge.clear() }
+                }
+                .keyboardShortcut("k", modifiers: .command)
+                Button("Stop / Interrupt") {
+                    Task { await store.bridge.interrupt() }
+                }
+                .keyboardShortcut(".", modifiers: .command)
+                Button("Reload Plugin") {
+                    Task {
+                        await store.pluginMirror.reinstall()
+                        store.manifest.refresh()
+                    }
+                }
+                .keyboardShortcut("l", modifiers: [.command, .shift])
+            }
         }
 
         Settings {
