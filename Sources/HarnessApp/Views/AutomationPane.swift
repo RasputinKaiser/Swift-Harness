@@ -5,6 +5,9 @@ import SwiftUI
 /// visualizer.
 struct AutomationPane: View {
     @Environment(HarnessStore.self) private var store
+    @State private var mcps: [MCPServerInfo] = []
+    @State private var tasks: [ScheduledTaskInfo] = []
+    @State private var isLoading = false
 
     var body: some View {
         ScrollView {
@@ -16,6 +19,14 @@ struct AutomationPane: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .navigationTitle("Automation")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: loadAll) {
+                    Label("Refresh", systemImage: "arrow.clockwise")
+                }
+            }
+        }
+        .task { loadAll() }
     }
 
     // MARK: - MCP Servers
@@ -24,13 +35,43 @@ struct AutomationPane: View {
         VStack(alignment: .leading, spacing: 8) {
             Label("MCP Servers", systemImage: "server.rack")
                 .font(.headline)
-            ForEach(discoveredMCPs, id: \.name) { mcp in
-                MCPServerRow(server: mcp)
+            if mcps.isEmpty {
+                Text("No MCP servers configured.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(mcps, id: \.name) { mcp in
+                    MCPServerRow(server: mcp)
+                }
             }
         }
     }
 
-    private var discoveredMCPs: [MCPServerInfo] {
+    private var scheduledTaskSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Scheduled Tasks", systemImage: "clock.arrow.circlepath")
+                .font(.headline)
+            if tasks.isEmpty {
+                Text("No scheduled tasks found. The weekly self-improvement sweep cron may have expired (7-day auto-expiry). Re-create it with install.sh --install-cron.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: 400, alignment: .leading)
+            } else {
+                ForEach(tasks, id: \.id) { task in
+                    ScheduledTaskRow(task: task)
+                }
+            }
+        }
+    }
+
+    // MARK: - Loaders (run once on appear + on Refresh — not on every render)
+
+    private func loadAll() {
+        loadMCPs()
+        loadTasks()
+    }
+
+    private func loadMCPs() {
         var servers: [MCPServerInfo] = []
         // From ~/.ncode/.config.json (NCode managed)
         let configURL = HarnessClient.ncodeDir.appendingPathComponent(".config.json", conformingTo: .text)
@@ -67,40 +108,20 @@ struct AutomationPane: View {
                 }
             }
         }
-        return servers.sorted(by: { $0.name < $1.name })
+        mcps = servers.sorted(by: { $0.name < $1.name })
     }
 
-    // MARK: - Scheduled Tasks
-
-    private var scheduledTaskSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Scheduled Tasks", systemImage: "clock.arrow.circlepath")
-                .font(.headline)
-            let tasks = discoveredScheduledTasks
-            if tasks.isEmpty {
-                Text("No scheduled tasks found. The weekly self-improvement sweep cron may have expired (7-day auto-expiry). Re-create it from the terminal with /loop or CronCreate.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: 400, alignment: .leading)
-            } else {
-                ForEach(tasks, id: \.id) { task in
-                    ScheduledTaskRow(task: task)
-                }
-            }
-        }
-    }
-
-    private var discoveredScheduledTasks: [ScheduledTaskInfo] {
+    private func loadTasks() {
         let url = HarnessClient.ncodeDir.appendingPathComponent("scheduled_tasks.json", conformingTo: .text)
         guard let data = try? Data(contentsOf: url),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return []
+            tasks = []
+            return
         }
-        // The file format is { "tasks": [{...}] } or similar
-        var tasks: [ScheduledTaskInfo] = []
+        var found: [ScheduledTaskInfo] = []
         if let arr = json["tasks"] as? [[String: Any]] {
             for dict in arr {
-                tasks.append(ScheduledTaskInfo(
+                found.append(ScheduledTaskInfo(
                     id: (dict["id"] as? String) ?? UUID().uuidString,
                     cron: (dict["cron"] as? String) ?? "?",
                     prompt: (dict["prompt"] as? String)?.prefix(120).description ?? "",
@@ -109,11 +130,10 @@ struct AutomationPane: View {
                 ))
             }
         }
-        // Also try flat dict format { "<id>": { ... } }
-        if tasks.isEmpty {
+        if found.isEmpty {
             for (key, val) in json {
                 if let dict = val as? [String: Any] {
-                    tasks.append(ScheduledTaskInfo(
+                    found.append(ScheduledTaskInfo(
                         id: key,
                         cron: (dict["cron"] as? String) ?? "?",
                         prompt: (dict["prompt"] as? String)?.prefix(120).description ?? "",
@@ -123,7 +143,7 @@ struct AutomationPane: View {
                 }
             }
         }
-        return tasks
+        tasks = found
     }
 }
 

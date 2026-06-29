@@ -20,16 +20,15 @@ struct CostPane: View {
     // MARK: - Summary cards
 
     private var summaryCards: some View {
-        let resultEvents = store.bridge.events.compactMap { event -> (cost: Double, input: Int, output: Int, duration: Int)? in
-            if case .result(_, _, let durationMs, _, _, let usage, let cost, _, _, _) = event {
-                return (cost, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0, durationMs)
-            }
-            return nil
-        }
-        let totalCost = resultEvents.map { $0.cost }.reduce(0, +)
-        let totalInput = resultEvents.map { $0.input }.reduce(0, +)
-        let totalOutput = resultEvents.map { $0.output }.reduce(0, +)
-        let avgDuration = resultEvents.isEmpty ? 0 : resultEvents.map { $0.duration }.reduce(0, +) / resultEvents.count
+        // Use cached incremental totals from NCodeBridge — avoids O(n) re-scan
+        // of the events array on every CostPane render.
+        let totalCost = store.bridge.totalCost
+        let totalInput = store.bridge.totalInputTokens
+        let totalOutput = store.bridge.totalOutputTokens
+        // Average duration from cached result events (much smaller than full
+        // events array — only result events, not user/assistant/system).
+        let durations = store.bridge.resultEvents.map { $0.duration }
+        let avgDuration = durations.isEmpty ? 0 : durations.reduce(0, +) / durations.count
 
         return LazyVGrid(columns: [GridItem(.adaptive(minimum: 180), spacing: 12)], spacing: 12) {
             MetricCard(title: "Total Cost",
@@ -45,7 +44,7 @@ struct CostPane: View {
                         systemImage: "arrow.up.circle.fill",
                         tint: .purple)
             MetricCard(title: "Turns",
-                        value: "\(resultEvents.count)",
+                        value: "\(store.bridge.resultEvents.count)",
                         systemImage: "arrow.triangle.2.circlepath",
                         tint: .orange)
             MetricCard(title: "Avg Duration",
@@ -111,13 +110,7 @@ struct CostPane: View {
 
     @ViewBuilder
     private var perTurnBreakdown: some View {
-        let results = store.bridge.events.enumerated().compactMap { idx, event -> (turn: Int, cost: Double, input: Int, output: Int, duration: Int, stop: String)? in
-            if case .result(let text, _, let durationMs, _, _, let usage, let cost, let stopReason, _, _) = event {
-                return (idx, cost, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0, durationMs, stopReason)
-            }
-            return nil
-        }
-
+        let results = store.bridge.resultEvents
         if results.isEmpty {
             Text("No turns completed yet — start a chat to see per-turn cost data.")
                 .font(.caption)
@@ -161,12 +154,7 @@ struct CostPane: View {
     }
 
     private var totalCost: Double {
-        store.bridge.events.compactMap { event -> Double? in
-            if case .result(_, _, _, _, _, _, let cost, _, _, _) = event {
-                return cost
-            }
-            return nil
-        }.reduce(0, +)
+        store.bridge.totalCost
     }
 
     private func formatNum(_ n: Int) -> String {

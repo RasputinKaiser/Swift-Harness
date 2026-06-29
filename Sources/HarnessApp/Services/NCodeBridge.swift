@@ -36,6 +36,19 @@ final class NCodeBridge {
     private(set) var pendingPlan: PlanProposal?
     private(set) var isPlanMode: Bool = false
 
+    /// Incremental total cost across all result events — avoids O(n) re-scan
+    /// of the events array on every ChatPane render.
+    private(set) var totalCost: Double = 0
+    /// Incremental token totals — same rationale as totalCost.
+    private(set) var totalInputTokens: Int = 0
+    private(set) var totalOutputTokens: Int = 0
+    /// Cached latest assistant text block — avoids O(n) reverse scan on
+    /// every ChatPane render (speaker button + auto-speak onChange).
+    private(set) var lastAssistantText: String? = nil
+    /// Cached result events only — avoids O(n) full-events scan in CostPane
+    /// (summary cards + per-turn breakdown + budget calc).
+    private(set) var resultEvents: [(cost: Double, input: Int, output: Int, duration: Int, stop: String, turn: Int)] = []
+
     /// Pending user messages we haven't received a `result` event for yet.
     /// Used to derive `isThinking`.
     private(set) var pendingTurnCount: Int = 0
@@ -61,6 +74,11 @@ final class NCodeBridge {
         self.sessionId = UUID().uuidString
         self.isResuming = false
         self.resumedFromSID = nil
+        self.totalCost = 0
+        self.totalInputTokens = 0
+        self.totalOutputTokens = 0
+        self.lastAssistantText = nil
+        self.resultEvents.removeAll()
         _startInternal()
     }
 
@@ -74,6 +92,11 @@ final class NCodeBridge {
         self.sessionId = UUID().uuidString
         self.isResuming = true
         self.resumedFromSID = sid
+        self.totalCost = 0
+        self.totalInputTokens = 0
+        self.totalOutputTokens = 0
+        self.lastAssistantText = nil
+        self.resultEvents.removeAll()
         _startInternal()
     }
 
@@ -183,6 +206,11 @@ final class NCodeBridge {
         events.removeAll()
         pendingPlan = nil
         statusBanner = "Cleared"
+        totalCost = 0
+        totalInputTokens = 0
+        totalOutputTokens = 0
+        lastAssistantText = nil
+        resultEvents.removeAll()
     }
 
     @MainActor
@@ -286,6 +314,13 @@ final class NCodeBridge {
         case "assistant":
             // Parse to rich content list — text + tool_use blocks handled separately.
             let content = parseAssistantContent(json["message"] as? [String: Any])
+            // Cache the latest text block for O(1) speaker-button access
+            for block in content {
+                if case .text(let s) = block, !s.isEmpty {
+                    lastAssistantText = s
+                    break
+                }
+            }
             // Detect ExitPlanMode tool_use and extract the plan
             if let msg = json["message"] as? [String: Any],
                let blocks = msg["content"] as? [[String: Any]] {
@@ -314,6 +349,18 @@ final class NCodeBridge {
             let usage = parseUsage(json["usage"] as? [String: Any])
             let cost = (json["total_cost_usd"] as? Double) ?? 0
             let stopReason = (json["stop_reason"] as? String) ?? "?"
+            // Incremental cost/token tracking — avoids O(n) re-scan on render
+            totalCost += cost
+            totalInputTokens += usage?.inputTokens ?? 0
+            totalOutputTokens += usage?.outputTokens ?? 0
+            resultEvents.append((
+                cost: cost,
+                input: usage?.inputTokens ?? 0,
+                output: usage?.outputTokens ?? 0,
+                duration: durationMs,
+                stop: stopReason,
+                turn: resultEvents.count + 1
+            ))
             events.append(.result(text: result, subtype: subtype,
                                   durationMs: durationMs, numTurns: numTurns,
                                   isError: isError, usage: usage,

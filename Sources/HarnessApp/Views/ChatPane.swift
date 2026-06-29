@@ -116,11 +116,8 @@ struct ChatPane: View {
                     .font(.caption2.bold())
                     .foregroundStyle(.blue)
             }
-            // Live cost display
-            let totalCost = store.bridge.events.compactMap { event -> Double? in
-                if case .result(_, _, _, _, _, _, let cost, _, _, _) = event { return cost }
-                return nil
-            }.reduce(0, +)
+            // Live cost display — reads cached incremental total from bridge
+            let totalCost = store.bridge.totalCost
             if totalCost > 0 {
                 Text(String(format: "$%.4f", totalCost))
                     .font(.caption2.bold().monospacedDigit())
@@ -249,16 +246,7 @@ struct ChatPane: View {
     }
 
     private func latestAssistantText() -> String? {
-        for ev in store.bridge.events.reversed() {
-            if case .assistant(let blocks, _, _) = ev {
-                for block in blocks {
-                    if case .text(let s) = block, !s.isEmpty {
-                        return s
-                    }
-                }
-            }
-        }
-        return nil
+        store.bridge.lastAssistantText
     }
 
     @ViewBuilder
