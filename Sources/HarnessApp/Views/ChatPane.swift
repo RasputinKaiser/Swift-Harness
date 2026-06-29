@@ -157,8 +157,12 @@ struct ChatPane: View {
                     .padding(.vertical, 8)
                 }
                 .onChange(of: store.bridge.events.last?.id) { _, newID in
+                    // Instant scroll (no animation) — prevents animation stacking
+                    // when 5-10 events arrive in rapid succession during a turn.
+                    // withAnimation caused jank because each event's animation
+                    // overlapped the previous one.
                     if let id = newID {
-                        withAnimation { proxy.scrollTo(id, anchor: .bottom) }
+                        proxy.scrollTo(id, anchor: .bottom)
                     }
                 }
             }

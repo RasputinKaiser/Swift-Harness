@@ -102,6 +102,9 @@ struct EvalPane: View {
     }
 
     private var passStats: (passed: Int, total: Int) {
+        // Computed once per render — bounded by case count (3-15 cases),
+        // so O(n) here is acceptable. The iteration is over cases (small),
+        // not over historical runs (large).
         var passed = 0
         var total = 0
         for c in store.evalCases.cases {

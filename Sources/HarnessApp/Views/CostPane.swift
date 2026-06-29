@@ -119,35 +119,41 @@ struct CostPane: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Per-Turn Breakdown")
                     .font(.headline)
-                ForEach(results, id: \.turn) { r in
-                    HStack(spacing: 12) {
-                        Text("Turn \(r.turn)")
-                            .font(.caption2.bold().monospaced())
-                            .foregroundStyle(.secondary)
-                            .frame(width: 60, alignment: .leading)
-                        Text(String(format: "$%.4f", r.cost))
-                            .font(.system(.caption, design: .monospaced))
-                            .foregroundStyle(.green)
-                            .frame(width: 70, alignment: .leading)
-                        Text(formatNum(r.input))
-                            .font(.caption2.monospacedDigit())
-                            .foregroundStyle(.blue)
-                            .frame(width: 60, alignment: .leading)
-                        Text(formatNum(r.output))
-                            .font(.caption2.monospacedDigit())
-                            .foregroundStyle(.purple)
-                            .frame(width: 60, alignment: .leading)
-                        Text("\(r.duration)ms")
-                            .font(.caption2.monospacedDigit())
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text(r.stop)
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
+                // LazyVStack — only renders visible rows. A 50+ turn session
+                // would otherwise render every HStack eagerly.
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 4) {
+                        ForEach(results, id: \.turn) { r in
+                            HStack(spacing: 12) {
+                                Text("Turn \(r.turn)")
+                                    .font(.caption2.bold().monospaced())
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 60, alignment: .leading)
+                                Text(String(format: "$%.4f", r.cost))
+                                    .font(.system(.caption, design: .monospaced))
+                                    .foregroundStyle(.green)
+                                    .frame(width: 70, alignment: .leading)
+                                Text(formatNum(r.input))
+                                    .font(.caption2.monospacedDigit())
+                                    .foregroundStyle(.blue)
+                                    .frame(width: 60, alignment: .leading)
+                                Text(formatNum(r.output))
+                                    .font(.caption2.monospacedDigit())
+                                    .foregroundStyle(.purple)
+                                    .frame(width: 60, alignment: .leading)
+                                Text("\(r.duration)ms")
+                                    .font(.caption2.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Text(r.stop)
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .padding(.vertical, 2)
+                            .padding(.horizontal, 8)
+                            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 4))
+                        }
                     }
-                    .padding(.vertical, 2)
-                    .padding(.horizontal, 8)
-                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 4))
                 }
             }
         }

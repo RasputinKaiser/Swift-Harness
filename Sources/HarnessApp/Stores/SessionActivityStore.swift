@@ -42,6 +42,14 @@ final class SessionActivityStore {
 
     @MainActor
     func attach(to session: SessionDescriptor, loadHistory: Bool = true) {
+        // Guard: skip if already tailing the same session — avoids canceling +
+        // recreating DispatchSource + re-reading the transcript from disk
+        // on every pane switch that returns to the same session.
+        if let current = attachedSession,
+           current.sessionId == session.sessionId,
+           case .tailing = status {
+            return
+        }
         detach()
         let url = session.transcriptURL
         status = .attaching(url)
