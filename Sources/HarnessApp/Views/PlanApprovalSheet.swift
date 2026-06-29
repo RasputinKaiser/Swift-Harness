@@ -2,98 +2,130 @@ import SwiftUI
 
 /// Native plan approval sheet shown when the agent calls ExitPlanMode.
 /// Displays the plan content and provides Accept / Reject / Modify actions.
+///
+/// Owns its actions per the SwiftUI sheet pattern: reads the bridge from
+/// @Environment, executes the decision, then dismisses itself. The parent
+/// only needs to drive `.sheet(item:)` with the proposal.
 struct PlanApprovalSheet: View {
     let plan: String
-    let onAccept: () -> Void
-    let onReject: (String) -> Void
+
+    @Environment(HarnessStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
 
     @State private var feedback: String = ""
     @State private var showFeedbackField: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack(spacing: 8) {
-                Image(systemName: "checklist")
-                    .font(.title2)
-                    .foregroundStyle(.orange)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Plan Proposed")
-                        .font(.title3.bold())
-                    Text("The agent has presented a plan for your approval.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 12)
-
+            header
             Divider()
-
-            // Plan content
-            ScrollView {
-                Text(plan)
-                    .font(.system(.callout, design: .monospaced))
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-            }
-            .frame(maxHeight: 280)
-
+            planContent
             Divider()
-
-            // Feedback field (shown when rejecting)
             if showFeedbackField {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Feedback for revision:")
-                        .font(.caption.bold())
-                        .foregroundStyle(.secondary)
-                    TextEditor(text: $feedback)
-                        .font(.system(.body))
-                        .frame(minHeight: 60, maxHeight: 100)
-                        .padding(6)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
+                feedbackField
             }
+            actions
+        }
+        .frame(width: 560)
+    }
 
-            // Actions
-            HStack(spacing: 12) {
-                if showFeedbackField {
-                    Button("Cancel") {
-                        showFeedbackField = false
-                        feedback = ""
-                    }
+    private var header: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checklist")
+                .font(.title2)
+                .foregroundStyle(.orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Plan Proposed")
+                    .font(.title3.bold())
+                Text("The agent has presented a plan for your approval.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+        .padding(.bottom, 12)
+    }
+
+    private var planContent: some View {
+        ScrollView {
+            Text(plan)
+                .font(.system(.callout, design: .monospaced))
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+        }
+        .frame(maxHeight: 280)
+    }
+
+    @ViewBuilder
+    private var feedbackField: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Feedback for revision:")
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+            TextEditor(text: $feedback)
+                .font(.system(.body))
+                .frame(minHeight: 60, maxHeight: 100)
+                .padding(6)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+    }
+
+    @ViewBuilder
+    private var actions: some View {
+        HStack(spacing: 12) {
+            if showFeedbackField {
+                Button("Cancel", action: cancelFeedback)
                     .buttonStyle(.bordered)
 
-                    Button("Send Feedback") {
-                        onReject(feedback)
-                    }
+                Button("Send Feedback", action: sendFeedback)
                     .buttonStyle(.borderedProminent)
                     .tint(.orange)
                     .disabled(feedback.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                } else {
-                    Button("Reject") {
-                        showFeedbackField = true
-                    }
+            } else {
+                Button("Reject", role: .destructive, action: startFeedback)
                     .buttonStyle(.bordered)
                     .tint(.red)
 
-                    Button("Approve Plan") {
-                        onAccept()
-                    }
+                Button("Approve Plan", action: approve)
                     .buttonStyle(.borderedProminent)
                     .tint(.green)
                     .keyboardShortcut(.return, modifiers: .command)
-                }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 20)
         }
-        .frame(width: 560)
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+        .padding(.bottom, 20)
+    }
+
+    // MARK: - Actions
+
+    private func approve() {
+        Task { @MainActor in
+            store.bridge.approvePlan()
+            dismiss()
+        }
+    }
+
+    private func startFeedback() {
+        showFeedbackField = true
+    }
+
+    private func cancelFeedback() {
+        showFeedbackField = false
+        feedback = ""
+    }
+
+    private func sendFeedback() {
+        let trimmed = feedback.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        Task { @MainActor in
+            store.bridge.rejectPlan(feedback: trimmed)
+            dismiss()
+        }
     }
 }

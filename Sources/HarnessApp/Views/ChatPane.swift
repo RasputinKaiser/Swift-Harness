@@ -27,15 +27,7 @@ struct ChatPane: View {
         }
         .navigationTitle("Chat")
         .sheet(item: planItemBinding) { plan in
-            PlanApprovalSheet(
-                plan: plan.text,
-                onAccept: {
-                    Task { @MainActor in store.bridge.approvePlan() }
-                },
-                onReject: { feedback in
-                    Task { @MainActor in store.bridge.rejectPlan(feedback: feedback) }
-                }
-            )
+            PlanApprovalSheet(plan: plan.text)
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
