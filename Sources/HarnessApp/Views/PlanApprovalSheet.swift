@@ -42,6 +42,13 @@ struct PlanApprovalSheet: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            // Plan-length badge: lines × words gives a quick size hint
+            let lines = plan.split(separator: "\n").count
+            Label("\(lines)", systemImage: "text.alignleft")
+                .font(.caption2.bold().monospacedDigit())
+                .padding(.horizontal, 6).padding(.vertical, 2)
+                .background(.tint.opacity(0.1), in: Capsule())
+                .help("\(lines) lines in plan")
         }
         .padding(.horizontal, 20)
         .padding(.top, 20)
@@ -55,6 +62,14 @@ struct PlanApprovalSheet: View {
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.orange.opacity(0.04))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(Color.orange.opacity(0.15), lineWidth: 1)
+                )
         }
         .frame(maxHeight: 280)
     }
@@ -81,20 +96,28 @@ struct PlanApprovalSheet: View {
             if showFeedbackField {
                 Button("Cancel", action: cancelFeedback)
                     .buttonStyle(.bordered)
+                    .keyboardShortcut(.escape, modifiers: [])
 
                 Button("Send Feedback", action: sendFeedback)
                     .buttonStyle(.borderedProminent)
                     .tint(.orange)
                     .disabled(feedback.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .keyboardShortcut(.return, modifiers: .command)
             } else {
                 Button("Reject", role: .destructive, action: startFeedback)
                     .buttonStyle(.bordered)
                     .tint(.red)
 
-                Button("Approve Plan", action: approve)
-                    .buttonStyle(.borderedProminent)
-                    .tint(.green)
-                    .keyboardShortcut(.return, modifiers: .command)
+                Spacer()
+                Button {
+                    approve()
+                } label: {
+                    Label("Approve Plan", systemImage: "checkmark.circle.fill")
+                        .padding(.horizontal, 4)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.green)
+                .keyboardShortcut(.return, modifiers: .command)
             }
         }
         .padding(.horizontal, 20)
