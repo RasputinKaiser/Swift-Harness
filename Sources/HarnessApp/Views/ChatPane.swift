@@ -113,6 +113,16 @@ struct ChatPane: View {
                     .font(.caption2.bold())
                     .foregroundStyle(.blue)
             }
+            // Live cost display
+            let totalCost = store.bridge.events.compactMap { event -> Double? in
+                if case .result(_, _, _, _, _, _, let cost, _, _, _) = event { return cost }
+                return nil
+            }.reduce(0, +)
+            if totalCost > 0 {
+                Text(String(format: "$%.4f", totalCost))
+                    .font(.caption2.bold().monospacedDigit())
+                    .foregroundStyle(totalCost > 10 ? .red : .green)
+            }
             Spacer()
             if let err = store.bridge.lastError {
                 Label(err, systemImage: "exclamationmark.triangle.fill")
