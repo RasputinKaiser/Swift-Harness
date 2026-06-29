@@ -43,6 +43,9 @@ final class HarnessStore {
     /// Bidirectional NCode subprocess for the Chat pane.
     var bridge = NCodeBridge()
 
+    /// Project navigator. Backs the Projects sidebar section.
+    var projects = ProjectStore()
+
     // MARK: - Init
 
     init() {

@@ -95,6 +95,25 @@ final class NCodeBridge {
             isStarting = false
             statusBanner = "Connected — send a message below"
             AppLogger.process.info("ncode bridge started (pid=\(p.processIdentifier))")
+
+            // Critical: when ncode exits (after `result` event in --print mode
+            // OR if killed externally), update internal state so the next send
+            // doesn't try to write to a dead pipe.
+            p.terminationHandler = { [weak self] proc in
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.isRunning = false
+                    if self.isThinking {
+                        self.pendingTurnCount = 0
+                        // If killed mid-turn, surface a system note so the user
+                        // knows the agent exited before responding.
+                        self.events.append(.system(text: "ncode exited mid-turn (exit \(proc.terminationStatus))",
+                                                    ts: Date(), uuid: UUID().uuidString))
+                    }
+                    self.statusBanner = "Session ended (exit \(proc.terminationStatus)). Start again to continue."
+                    AppLogger.process.notice("ncode bridge ended (exit \(proc.terminationStatus))")
+                }
+            }
         } catch {
             lastError = "ncode launch failed: \(error.localizedDescription)"
             isStarting = false
