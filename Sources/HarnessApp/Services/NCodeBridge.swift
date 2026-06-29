@@ -21,6 +21,8 @@ final class NCodeBridge {
 
     private(set) var events: [ChatEvent] = []
     private(set) var statusBanner: String = ""
+    private(set) var pendingPlan: String?
+    private(set) var isPlanMode: Bool = false
 
     /// Pending user messages we haven't received a `result` event for yet.
     /// Used to derive `isThinking`.
@@ -64,7 +66,7 @@ final class NCodeBridge {
             "--input-format", "stream-json",
             "--output-format", "stream-json",
             "--session-id", sessionId,
-            "--permission-mode", "bypassPermissions",
+            "--permission-mode", isPlanMode ? "plan" : "bypassPermissions",
         ]
         p.currentDirectoryURL = self.cwd
 
@@ -140,7 +142,36 @@ final class NCodeBridge {
     @MainActor
     func clear() {
         events.removeAll()
+        pendingPlan = nil
         statusBanner = "Cleared"
+    }
+
+    @MainActor
+    func setPlanMode(_ enabled: Bool) {
+        guard isPlanMode != enabled else { return }
+        isPlanMode = enabled
+        if isRunning { stop() }
+        pendingPlan = nil
+    }
+
+    @MainActor
+    func approvePlan() {
+        guard pendingPlan != nil else { return }
+        send("Yes, proceed with the plan as proposed.")
+        pendingPlan = nil
+    }
+
+    @MainActor
+    func rejectPlan(feedback: String = "") {
+        guard pendingPlan != nil else { return }
+        let msg = feedback.isEmpty ? "No, let's revise the approach." : "No, \(feedback)"
+        send(msg)
+        pendingPlan = nil
+    }
+
+    @MainActor
+    func dismissPlan() {
+        pendingPlan = nil
     }
 
     // MARK: - Sending
@@ -216,6 +247,18 @@ final class NCodeBridge {
         case "assistant":
             // Parse to rich content list — text + tool_use blocks handled separately.
             let content = parseAssistantContent(json["message"] as? [String: Any])
+            // Detect ExitPlanMode tool_use and extract the plan
+            if let msg = json["message"] as? [String: Any],
+               let blocks = msg["content"] as? [[String: Any]] {
+                for block in blocks {
+                    if (block["type"] as? String) == "tool_use",
+                       (block["name"] as? String) == "ExitPlanMode",
+                       let input = block["input"] as? [String: Any],
+                       let plan = input["plan"] as? String {
+                        pendingPlan = plan
+                    }
+                }
+            }
             events.append(.assistant(content: content, ts: ts, uuid: uuid))
         case "user":
             // Server-echoed our message — skip

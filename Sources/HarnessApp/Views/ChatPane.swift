@@ -10,6 +10,13 @@ struct ChatPane: View {
     @State private var draft: String = ""
     @FocusState private var inputFocused: Bool
 
+    private var planSheetBinding: Binding<Bool> {
+        Binding(
+            get: { store.bridge.pendingPlan != nil },
+            set: { if !$0 { store.bridge.dismissPlan() } }
+        )
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             toolbar
@@ -19,12 +26,37 @@ struct ChatPane: View {
             composer
         }
         .navigationTitle("Chat")
+        .sheet(isPresented: planSheetBinding) {
+            if let plan = store.bridge.pendingPlan {
+                PlanApprovalSheet(
+                    plan: plan,
+                    onAccept: {
+                        Task { @MainActor in store.bridge.approvePlan() }
+                    },
+                    onReject: { feedback in
+                        Task { @MainActor in store.bridge.rejectPlan(feedback: feedback) }
+                    }
+                )
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Button("Stop chat", role: .destructive) { Task { await store.bridge.stop() } }
                         .disabled(!store.bridge.isRunning)
                     Button("Clear transcript") { Task { @MainActor in store.bridge.clear() } }
+                    Divider()
+                    Toggle("Plan Mode", isOn: Binding(
+                        get: { store.bridge.isPlanMode },
+                        set: { newVal in
+                            Task { @MainActor in
+                                store.bridge.setPlanMode(newVal)
+                                if !store.bridge.isRunning {
+                                    store.bridge.start(cwd: nil)
+                                }
+                            }
+                        }
+                    ))
                 } label: {
                     Label("Session", systemImage: "ellipsis.circle")
                 }
