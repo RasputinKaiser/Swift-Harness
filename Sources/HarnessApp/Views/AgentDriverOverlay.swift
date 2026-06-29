@@ -12,12 +12,21 @@ struct AgentDriverOverlay: View {
         let id = UUID()
         let rect: CGRect
         let createdAt: Date
+
+        /// Rejects NaN/Infinity and zero/negative sizes — these would yield
+        /// unsatisfiable constraints inside the `.frame().position()` chain.
+        var isRenderable: Bool {
+            rect.width > 0 && rect.height > 0
+                && rect.width.isFinite && rect.height.isFinite
+                && rect.midX.isFinite && rect.midY.isFinite
+        }
     }
 
     var body: some View {
-        ZStack {
+        let renderable = highlights.filter(\.isRenderable)
+        return ZStack {
             // Click highlights — pulse and fade
-            ForEach(highlights) { h in
+            ForEach(renderable) { h in
                 RoundedRectangle(cornerRadius: 4)
                     .strokeBorder(Color.yellow, lineWidth: 3)
                     .opacity(opacity(h))
@@ -50,7 +59,7 @@ struct AgentDriverOverlay: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: isDriving)
-        .animation(.easeOut(duration: 0.3), value: highlights.count)
+        .animation(.easeOut(duration: 0.3), value: renderable.count)
         .allowsHitTesting(false)
     }
 

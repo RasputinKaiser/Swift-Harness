@@ -10,10 +10,10 @@ struct ChatPane: View {
     @State private var draft: String = ""
     @FocusState private var inputFocused: Bool
 
-    private var planSheetBinding: Binding<Bool> {
+    private var planItemBinding: Binding<NCodeBridge.PlanProposal?> {
         Binding(
-            get: { store.bridge.pendingPlan != nil },
-            set: { if !$0 { store.bridge.dismissPlan() } }
+            get: { store.bridge.pendingPlan },
+            set: { if $0 == nil { store.bridge.dismissPlan() } }
         )
     }
 
@@ -26,18 +26,16 @@ struct ChatPane: View {
             composer
         }
         .navigationTitle("Chat")
-        .sheet(isPresented: planSheetBinding) {
-            if let plan = store.bridge.pendingPlan {
-                PlanApprovalSheet(
-                    plan: plan,
-                    onAccept: {
-                        Task { @MainActor in store.bridge.approvePlan() }
-                    },
-                    onReject: { feedback in
-                        Task { @MainActor in store.bridge.rejectPlan(feedback: feedback) }
-                    }
-                )
-            }
+        .sheet(item: planItemBinding) { plan in
+            PlanApprovalSheet(
+                plan: plan.text,
+                onAccept: {
+                    Task { @MainActor in store.bridge.approvePlan() }
+                },
+                onReject: { feedback in
+                    Task { @MainActor in store.bridge.rejectPlan(feedback: feedback) }
+                }
+            )
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {

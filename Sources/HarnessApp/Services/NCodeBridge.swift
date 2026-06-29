@@ -13,6 +13,14 @@ import SwiftUI
 @Observable
 final class NCodeBridge {
 
+    /// Wrap pending plan text in an Identifiable so `.sheet(item:)` can drive
+    /// lifecycle safely (the Bool-binding pattern crashes if the content
+    /// becomes nil mid-dismiss-animation).
+    struct PlanProposal: Identifiable {
+        let id = UUID()
+        let text: String
+    }
+
     private(set) var isStarting = false
     private(set) var isRunning = false
     private(set) var lastError: String?
@@ -25,7 +33,7 @@ final class NCodeBridge {
 
     private(set) var events: [ChatEvent] = []
     private(set) var statusBanner: String = ""
-    private(set) var pendingPlan: String?
+    private(set) var pendingPlan: PlanProposal?
     private(set) var isPlanMode: Bool = false
 
     /// Pending user messages we haven't received a `result` event for yet.
@@ -286,7 +294,7 @@ final class NCodeBridge {
                        (block["name"] as? String) == "ExitPlanMode",
                        let input = block["input"] as? [String: Any],
                        let plan = input["plan"] as? String {
-                        pendingPlan = plan
+                        pendingPlan = PlanProposal(text: plan)
                     }
                 }
             }

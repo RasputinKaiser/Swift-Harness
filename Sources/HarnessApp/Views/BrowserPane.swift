@@ -162,7 +162,7 @@ final class WebViewModel {
         }
         // Auto-remove after 2s
         let id = clickHighlights.last?.id
-        Task {
+        Task { @MainActor in
             try? await Task.sleep(nanoseconds: 2_000_000_000)
             if let id { clickHighlights.removeAll { $0.id == id } }
         }
