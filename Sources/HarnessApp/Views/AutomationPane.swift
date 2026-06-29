@@ -149,6 +149,17 @@ struct ScheduledTaskInfo: Identifiable, Hashable {
     let prompt: String
     let recurring: Bool
     let durable: Bool
+
+    /// Cached parsed cron expression. nil if malformed.
+    var expression: CronExpression? { CronExpression.parse(cron) }
+    var humanSchedule: String { expression?.humanDescription ?? cron }
+    var nextFire: Date? { expression?.nextFire(after: Date()) }
+    var nextFireRelative: String? {
+        guard let nf = nextFire else { return nil }
+        let rel = RelativeDateTimeFormatter()
+        rel.unitsStyle = .abbreviated
+        return rel.localizedString(for: nf, relativeTo: Date())
+    }
 }
 
 private struct MCPServerRow: View {
@@ -200,12 +211,12 @@ private struct ScheduledTaskRow: View {
     let task: ScheduledTaskInfo
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
                 Image(systemName: task.recurring ? "arrow.triangle.2.circlepath" : "play.circle")
                     .foregroundStyle(task.durable ? .green : .orange)
                     .font(.caption)
-                Text(task.cron)
+                Text(task.humanSchedule)
                     .font(.system(.callout, design: .monospaced))
                 Spacer()
                 if task.durable {
@@ -213,6 +224,28 @@ private struct ScheduledTaskRow: View {
                         .font(.caption2.bold())
                         .foregroundStyle(.green)
                 }
+                if !task.recurring {
+                    Label("one-shot", systemImage: "1.circle")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.purple)
+                }
+            }
+            if let nf = task.nextFire, let rel = task.nextFireRelative {
+                HStack(spacing: 4) {
+                    Image(systemName: "clock.badge")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                    Text("next \(rel)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(nf.formatted(date: .abbreviated, time: .shortened))
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.tertiary)
+                }
+            } else {
+                Text("invalid cron expression")
+                    .font(.caption2.italic())
+                    .foregroundStyle(.red)
             }
             Text(task.prompt)
                 .font(.caption)
@@ -220,7 +253,7 @@ private struct ScheduledTaskRow: View {
                 .lineLimit(2)
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 6))
     }
 }
