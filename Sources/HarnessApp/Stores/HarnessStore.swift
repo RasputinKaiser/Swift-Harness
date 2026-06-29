@@ -52,6 +52,9 @@ final class HarnessStore {
     /// Shared WKWebView model for the companion browser in ChatSplitView.
     var browserModel = WebViewModel()
 
+    /// Browser IPC server — receives tool calls from the agent via Unix socket.
+    var browserIPC = BrowserIPCServer()
+
     // MARK: - Init
 
     init() {

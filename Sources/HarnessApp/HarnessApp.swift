@@ -4,7 +4,12 @@ import SwiftUI
 struct HarnessApp: App {
     @State private var store = HarnessStore()
 
-    init() { AppLogger.bootstrap() }
+    init() {
+        AppLogger.bootstrap()
+        // Start the browser IPC server so the agent can call browser_* tools
+        store.browserIPC.browserModel = store.browserModel
+        store.browserIPC.start()
+    }
 
     var body: some Scene {
         WindowGroup {
