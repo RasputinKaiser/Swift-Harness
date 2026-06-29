@@ -36,6 +36,7 @@ struct ContentView: View {
         case .computer: ComputerPane()
         case .cost: CostPane()
         case .automation: AutomationPane()
+        case .skills: SkillsPane()
         case .status: StatusPane()
         case .tests: TestsPane()
         case .snapshots: SnapshotsPane()
