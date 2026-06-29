@@ -1,7 +1,7 @@
 import Foundation
 
 enum SidebarSection: String, CaseIterable, Identifiable, Hashable {
-    case projects, agents, computer, cost, automation, skills, templates, status, tests, snapshots, plugin, manifest, memory, journal, hooks, browser
+    case projects, agents, computer, cost, automation, skills, templates, telemetry, status, tests, snapshots, plugin, manifest, memory, journal, hooks, browser
 
     var id: String { rawValue }
 
@@ -14,6 +14,7 @@ enum SidebarSection: String, CaseIterable, Identifiable, Hashable {
         case .automation: "Automation"
         case .skills: "Skills"
         case .templates: "Templates"
+        case .telemetry: "Telemetry"
         case .status: "Status"
         case .tests: "Tests"
         case .snapshots: "Snapshots"
@@ -35,6 +36,7 @@ enum SidebarSection: String, CaseIterable, Identifiable, Hashable {
         case .automation: "gearshape.2.fill"
         case .skills: "puzzlepiece.extension.fill"
         case .templates: "doc.on.clipboard.fill"
+        case .telemetry: "chart.xyaxis.line"
         case .status: "speedometer"
         case .tests: "checkmark.seal"
         case .snapshots: "archivebox"

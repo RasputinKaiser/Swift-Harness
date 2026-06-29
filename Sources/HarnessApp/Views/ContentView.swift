@@ -38,6 +38,7 @@ struct ContentView: View {
         case .automation: AutomationPane()
         case .skills: SkillsPane()
         case .templates: TemplatesPane()
+        case .telemetry: TelemetryPane()
         case .status: StatusPane()
         case .tests: TestsPane()
         case .snapshots: SnapshotsPane()
