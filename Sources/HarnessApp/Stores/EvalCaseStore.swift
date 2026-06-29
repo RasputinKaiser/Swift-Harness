@@ -38,6 +38,21 @@ final class EvalCaseStore {
         lastRuns[caseId]
     }
 
+    /// All runs for a case, oldest first (used by per-case trend).
+    private(set) var runsByCase: [String: [EvalRun]] = [:]
+
+    /// Last N runs across all cases, oldest-first (used by the header sparkline).
+    func recentRuns(limit: Int = 12) -> [EvalRun] {
+        var all: [EvalRun] = []
+        for runs in runsByCase.values {
+            all.append(contentsOf: runs)
+        }
+        all.sort { (a, b) in
+            (a.finishedAt ?? .distantPast) < (b.finishedAt ?? .distantPast)
+        }
+        return Array(all.suffix(limit))
+    }
+
     // MARK: - Run history
 
     /// Read ~/.ncode/eval/results.jsonl and bucket runs by caseId, keeping
@@ -49,21 +64,32 @@ final class EvalCaseStore {
         }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        var byCase: [String: EvalRun] = [:]
+        var byCaseLast: [String: EvalRun] = [:]
+        var allByCase: [String: [EvalRun]] = [:]
         for line in text.split(separator: "\n") {
             guard let lineData = line.data(using: .utf8),
                   let run = try? decoder.decode(EvalRun.self, from: lineData) else {
                 continue
             }
+            var arr = allByCase[run.caseId] ?? []
+            arr.append(run)
+            allByCase[run.caseId] = arr
             // Keep newer runs (later in file = more recent)
-            if let existing = byCase[run.caseId],
+            if let existing = byCaseLast[run.caseId],
                let exTime = existing.finishedAt, let newTime = run.finishedAt,
                exTime >= newTime {
                 continue
             }
-            byCase[run.caseId] = run
+            byCaseLast[run.caseId] = run
         }
-        return byCase
+        // Sort each case's history oldest-first
+        for (cid, runs) in allByCase {
+            allByCase[cid] = runs.sorted { (a, b) in
+                (a.finishedAt ?? .distantPast) < (b.finishedAt ?? .distantPast)
+            }
+        }
+        runsByCase = allByCase
+        return byCaseLast
     }
 
     // MARK: - Discovery

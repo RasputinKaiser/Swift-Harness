@@ -70,19 +70,30 @@ struct EvalPane: View {
     @ViewBuilder
     private var totalPassRateBadge: some View {
         let stats = passStats
+        let recent = store.evalCases.recentRuns(limit: 12)
+        let passRates = recent.compactMap { run -> Double? in
+            guard let s = run.score else { return nil }
+            return s
+        }
         if stats.total > 0 {
             let rate = Double(stats.passed) / Double(stats.total)
             let color: Color = rate >= 0.8 ? .green : (rate >= 0.5 ? .orange : .red)
-            HStack(spacing: 4) {
-                Text(String(format: "%.0f%%", rate * 100))
-                    .font(.caption.bold().monospacedDigit())
-                    .foregroundStyle(color)
-                Text("(\(stats.passed)/\(stats.total))")
-                    .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                if passRates.count >= 2 {
+                    Sparkline(values: passRates, color: color)
+                        .frame(width: 60, height: 18)
+                }
+                HStack(spacing: 4) {
+                    Text(String(format: "%.0f%%", rate * 100))
+                        .font(.caption.bold().monospacedDigit())
+                        .foregroundStyle(color)
+                    Text("(\(stats.passed)/\(stats.total))")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 8).padding(.vertical, 3)
+                .background(color.opacity(0.1), in: Capsule())
             }
-            .padding(.horizontal, 8).padding(.vertical, 3)
-            .background(color.opacity(0.1), in: Capsule())
         }
     }
 
@@ -175,6 +186,7 @@ private struct EvalCaseCard: View {
             Text(case_.id)
                 .font(.system(.callout, design: .monospaced).bold())
             Spacer()
+            trendBadge
             if pendingRun && store.eval.isRunning {
                 ProgressView().controlSize(.small)
             }
@@ -186,6 +198,28 @@ private struct EvalCaseCard: View {
             .buttonStyle(.borderless)
             .help("Run this case")
             .disabled(store.eval.isRunning || pendingRun)
+        }
+    }
+
+    @ViewBuilder
+    private var trendBadge: some View {
+        if let runs = store.evalCases.runsByCase[case_.id], runs.count >= 2 {
+            let lastScore = runs.last?.score ?? 0
+            let prevScore = runs.dropLast().last?.score ?? 0
+            let delta = lastScore - prevScore
+            if runs.count >= 2 && delta != 0 {
+                let trending: StatusKind = delta > 0 ? .pass : .fail
+                let arrow: String = delta > 0 ? "arrow.up.right" : "arrow.down.right"
+                HStack(spacing: 2) {
+                    Image(systemName: arrow)
+                        .font(.caption2.bold())
+                    Text(String(format: "%+.0f%%", delta * 100))
+                        .font(.caption2.bold().monospacedDigit())
+                }
+                .foregroundStyle(StatusTheme.color(for: trending))
+                .padding(.horizontal, 4).padding(.vertical, 1)
+                .background(StatusTheme.color(for: trending).opacity(0.1), in: Capsule())
+            }
         }
     }
 
