@@ -65,10 +65,13 @@ struct TestsPane: View {
                     .padding(16)
             }
         } else {
-            ContentUnavailableView(
+            EmptyState(
                 "No test run yet",
                 systemImage: "checkmark.seal",
-                description: Text("Click Run to execute ~/.ncode/scripts/run_tests.py")
+                description: "Run the 73 regression tests in ~/.ncode/scripts/run_tests.py",
+                actionTitle: store.isRunningTests ? nil : "Run tests now",
+                action: store.isRunningTests ? nil : { Task { await store.runTests() } },
+                secondaryInfo: "~/.ncode/scripts/run_tests.py"
             )
         }
     }

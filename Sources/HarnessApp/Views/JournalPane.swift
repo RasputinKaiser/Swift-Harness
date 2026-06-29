@@ -16,10 +16,13 @@ struct JournalPane: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(16)
                 } else {
-                    ContentUnavailableView(
+                    EmptyState(
                         "No journal yet",
                         systemImage: "book",
-                        description: Text("Run /improve in NCode to populate ~/.ncode/improvements.md")
+                        description: "Run /improve to populate ~/.ncode/improvements.md with self-correction sweeps.",
+                        actionTitle: "Refresh now",
+                        action: { Task { await reload() } },
+                        secondaryInfo: "~/.ncode/improvements.md"
                     )
                     .padding(.top, 60)
                 }
