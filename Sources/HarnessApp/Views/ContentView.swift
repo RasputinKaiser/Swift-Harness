@@ -31,9 +31,8 @@ struct ContentView: View {
     @ViewBuilder
     private var detail: some View {
         switch selection {
+        case .projects: ProjectsView()
         case .status: StatusPane()
-        case .sessions: SessionsPane()
-        case .chat: ChatPane()
         case .tests: TestsPane()
         case .snapshots: SnapshotsPane()
         case .plugin: PluginPane()

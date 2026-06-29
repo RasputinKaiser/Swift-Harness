@@ -1,5 +1,10 @@
 import SwiftUI
 
+/// Chat transcript + composer used as the detail column inside ProjectsView.
+///
+/// Reuses `store.bridge` for the bidirectional connection. The bridge is
+/// shared across project switches — when the user clicks "Start new chat"
+/// in a different project, the bridge stops and restarts in the new cwd.
 struct ChatPane: View {
     @Environment(HarnessStore.self) private var store
     @State private var draft: String = ""
@@ -17,8 +22,8 @@ struct ChatPane: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    Button("Start chat") { Task { await store.bridge.start(cwd: liveSessionCWD) } }
                     Button("Stop chat", role: .destructive) { Task { await store.bridge.stop() } }
+                        .disabled(!store.bridge.isRunning)
                     Button("Clear transcript") { Task { @MainActor in store.bridge.clear() } }
                 } label: {
                     Label("Session", systemImage: "ellipsis.circle")
@@ -60,7 +65,7 @@ struct ChatPane: View {
                     .foregroundStyle(.orange)
             } else {
                 Button {
-                    Task { await store.bridge.start(cwd: liveSessionCWD) }
+                    Task { await store.bridge.start(cwd: nil) }
                 } label: {
                     Label("Start NCode session", systemImage: "play.fill")
                 }
@@ -139,7 +144,7 @@ struct ChatPane: View {
                         .foregroundStyle(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? AnyShapeStyle(.tertiary) : AnyShapeStyle(Color.accentColor))
                 }
                 .buttonStyle(.plain)
-                .keyboardShortcut(.return, modifiers: [.command])
+                .keyboardShortcut(.return, modifiers: .command)
                 .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !store.bridge.isRunning)
             }
             .padding(.horizontal, 16)
@@ -153,12 +158,6 @@ struct ChatPane: View {
         guard !text.isEmpty, store.bridge.isRunning else { return }
         store.bridge.send(text)
         draft = ""
-    }
-
-    /// If there's a live session being observed in the SessionsPane, use its cwd
-    /// as the chat's working directory. Otherwise default to ~.
-    private var liveSessionCWD: URL? {
-        store.liveSession.attachedSession?.cwdURL
     }
 }
 
@@ -193,8 +192,6 @@ private struct ChatRow: View {
         default: return .leading
         }
     }
-
-    // MARK: - Bubble variants
 
     private func userBubble(text: String, ts: Date) -> some View {
         VStack(alignment: .trailing, spacing: 2) {
@@ -349,7 +346,6 @@ private struct ToolUseDisclosure: View {
             .padding(.vertical, 6)
             .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
         }
-        .padding(.horizontal, 0)
     }
 }
 
