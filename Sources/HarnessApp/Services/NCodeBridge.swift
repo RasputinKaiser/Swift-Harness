@@ -36,6 +36,11 @@ final class NCodeBridge {
     private(set) var pendingPlan: PlanProposal?
     private(set) var isPlanMode: Bool = false
 
+    /// Cap on events array — prevents unbounded growth in long sessions.
+    /// When exceeded, oldest events are dropped (same pattern as HookEventStore).
+    /// Set to 0 for unlimited. Default 500 keeps ~2 hours of active chat.
+    var maxEvents = 500
+
     /// Incremental total cost across all result events — avoids O(n) re-scan
     /// of the events array on every ChatPane render.
     private(set) var totalCost: Double = 0
@@ -171,7 +176,7 @@ final class NCodeBridge {
                         self.pendingTurnCount = 0
                         // If killed mid-turn, surface a system note so the user
                         // knows the agent exited before responding.
-                        self.events.append(.system(text: "ncode exited mid-turn (exit \(proc.terminationStatus))",
+                        self.appendEvent(.system(text: "ncode exited mid-turn (exit \(proc.terminationStatus))",
                                                     ts: Date(), uuid: UUID().uuidString))
                     }
                     self.statusBanner = "Session ended (exit \(proc.terminationStatus)). Start again to continue."
@@ -258,7 +263,7 @@ final class NCodeBridge {
         line.append(0x0A)
         do {
             try pipe.fileHandleForWriting.write(contentsOf: line)
-            events.append(.user(text: text, ts: Date(), uuid: UUID().uuidString))
+            appendEvent(.user(text: text, ts: Date(), uuid: UUID().uuidString))
             pendingTurnCount += 1
             statusBanner = ""
         } catch {
@@ -274,12 +279,20 @@ final class NCodeBridge {
         process?.terminate()
         pendingTurnCount = 0
         statusBanner = "Interrupted"
-        events.append(.system(text: "interrupted by user",
+        appendEvent(.system(text: "interrupted by user",
                                ts: Date(),
                                uuid: UUID().uuidString))
     }
 
     // MARK: - Receiving
+
+    @MainActor
+    private func appendEvent(_ event: ChatEvent) {
+        appendEvent(event)
+        if maxEvents > 0 && events.count > maxEvents {
+            events.removeFirst(events.count - maxEvents)
+        }
+    }
 
     @MainActor
     private func handleLine(_ line: String) {
@@ -305,11 +318,11 @@ final class NCodeBridge {
                 let model = (json["model"] as? String) ?? "?"
                 let cwd = (json["cwd"] as? String) ?? "?"
                 let mcpCount = ((json["mcp_servers"] as? [[String: Any]])?.count) ?? 0
-                events.append(.system(text:
+                appendEvent(.system(text:
                     "session init — model=\(model), cwd=\(cwd), \(mcpCount) MCP servers connected",
                     ts: ts, uuid: uuid))
             default:
-                events.append(.system(text: subtype, ts: ts, uuid: uuid))
+                appendEvent(.system(text: subtype, ts: ts, uuid: uuid))
             }
         case "assistant":
             // Parse to rich content list — text + tool_use blocks handled separately.
@@ -333,7 +346,7 @@ final class NCodeBridge {
                     }
                 }
             }
-            events.append(.assistant(content: content, ts: ts, uuid: uuid))
+            appendEvent(.assistant(content: content, ts: ts, uuid: uuid))
         case "user":
             // Server-echoed our message — skip
             break
@@ -361,7 +374,7 @@ final class NCodeBridge {
                 stop: stopReason,
                 turn: resultEvents.count + 1
             ))
-            events.append(.result(text: result, subtype: subtype,
+            appendEvent(.result(text: result, subtype: subtype,
                                   durationMs: durationMs, numTurns: numTurns,
                                   isError: isError, usage: usage,
                                   cost: cost, stopReason: stopReason,
@@ -372,7 +385,7 @@ final class NCodeBridge {
         case "stream_event":
             return
         default:
-            events.append(.other(type: type, raw: line, ts: ts, uuid: uuid))
+            appendEvent(.other(type: type, raw: line, ts: ts, uuid: uuid))
         }
     }
 
