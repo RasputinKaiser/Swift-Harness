@@ -49,6 +49,9 @@ final class HarnessStore {
     /// Hooks/agents/commands catalog. Backs Manifest pane.
     var manifest = ManifestStore()
 
+    /// Subagent run catalog. Backs Agents pane.
+    var subagents = SubagentStore()
+
     /// Shared WKWebView model for the companion browser in ChatSplitView.
     var browserModel = WebViewModel()
 

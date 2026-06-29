@@ -32,6 +32,7 @@ struct ContentView: View {
     private var detail: some View {
         switch selection {
         case .projects: ProjectsView()
+        case .agents: AgentsPane()
         case .status: StatusPane()
         case .tests: TestsPane()
         case .snapshots: SnapshotsPane()
