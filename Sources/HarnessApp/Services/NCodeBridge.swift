@@ -22,6 +22,14 @@ final class NCodeBridge {
     private(set) var events: [ChatEvent] = []
     private(set) var statusBanner: String = ""
 
+    /// Pending user messages we haven't received a `result` event for yet.
+    /// Used to derive `isThinking`.
+    private(set) var pendingTurnCount: Int = 0
+
+    /// True when we've sent a user message but the matching `result` event
+    /// hasn't arrived yet — i.e. the agent is working on a turn.
+    var isThinking: Bool { pendingTurnCount > 0 && isRunning }
+
     private var process: Process?
     private var stdinPipe: Pipe?
     private var stdoutPipe: Pipe?
@@ -96,6 +104,7 @@ final class NCodeBridge {
     @MainActor
     func stop() {
         process?.terminate()
+        pendingTurnCount = 0
         if let p = process {
             p.terminationHandler = { [weak self] proc in
                 Task { @MainActor in
@@ -133,10 +142,24 @@ final class NCodeBridge {
         do {
             try pipe.fileHandleForWriting.write(contentsOf: line)
             events.append(.user(text: text, ts: Date(), uuid: UUID().uuidString))
+            pendingTurnCount += 1
             statusBanner = ""
         } catch {
             lastError = "write failed: \(error.localizedDescription)"
         }
+    }
+
+    /// Interrupt the current turn. Sends SIGTERM to the running process —
+    /// any partial output already buffered in `events` stays visible.
+    @MainActor
+    func interrupt() {
+        guard isRunning else { return }
+        process?.terminate()
+        pendingTurnCount = 0
+        statusBanner = "Interrupted"
+        events.append(.system(text: "interrupted by user",
+                               ts: Date(),
+                               uuid: UUID().uuidString))
     }
 
     // MARK: - Receiving
@@ -179,6 +202,8 @@ final class NCodeBridge {
             // Server-echoed our message — skip
             break
         case "result":
+            // Decrement pending turn counter — agent finished this turn.
+            pendingTurnCount = max(0, pendingTurnCount - 1)
             // Pull useful metadata as a typed event.
             let subtype = (json["subtype"] as? String) ?? "result"
             let result = (json["result"] as? String) ?? ""

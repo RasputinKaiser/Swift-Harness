@@ -30,11 +30,28 @@ struct ChatPane: View {
     private var toolbar: some View {
         HStack(spacing: 8) {
             if store.bridge.isRunning {
-                Image(systemName: "antenna.radiowaves.left.and.right")
-                    .foregroundStyle(.green)
-                Text("Live")
-                    .font(.caption2.bold())
-                    .foregroundStyle(.green)
+                if store.bridge.isThinking {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("thinking…")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.orange)
+                } else {
+                    Image(systemName: "antenna.radiowaves.left.and.right")
+                        .foregroundStyle(.green)
+                    Text("Live")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.green)
+                }
+                Button {
+                    Task { await store.bridge.interrupt() }
+                } label: {
+                    Label("Stop", systemImage: "stop.fill")
+                }
+                .buttonStyle(.bordered)
+                .tint(.red)
+                .keyboardShortcut(".", modifiers: .command)
+                .disabled(!store.bridge.isThinking)
             } else if store.bridge.isStarting {
                 ProgressView()
                     .controlSize(.small)
