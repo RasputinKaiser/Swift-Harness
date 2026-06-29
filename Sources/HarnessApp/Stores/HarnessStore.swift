@@ -40,6 +40,9 @@ final class HarnessStore {
     /// Memory Fabric explorer. Backs Memory pane.
     var memory = MemoryStore()
 
+    /// Bidirectional NCode subprocess for the Chat pane.
+    var bridge = NCodeBridge()
+
     // MARK: - Init
 
     init() {

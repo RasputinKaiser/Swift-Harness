@@ -33,6 +33,7 @@ struct ContentView: View {
         switch selection {
         case .status: StatusPane()
         case .sessions: SessionsPane()
+        case .chat: ChatPane()
         case .tests: TestsPane()
         case .snapshots: SnapshotsPane()
         case .plugin: PluginPane()
