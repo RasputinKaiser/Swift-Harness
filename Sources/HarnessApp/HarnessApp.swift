@@ -40,6 +40,7 @@ struct HarnessApp: App {
                 }
                 .keyboardShortcut("k", modifiers: .command)
                 Button("Stop / Interrupt") {
+                    store.browserModel.isAgentDriving = false
                     Task { await store.bridge.interrupt() }
                 }
                 .keyboardShortcut(".", modifiers: .command)

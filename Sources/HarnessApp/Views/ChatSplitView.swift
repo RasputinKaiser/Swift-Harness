@@ -33,7 +33,13 @@ struct ChatSplitView: View {
         VStack(spacing: 0) {
             browserToolbar
             Divider()
-            WebView(webView: store.browserModel)
+            ZStack(alignment: .topTrailing) {
+                WebView(webView: store.browserModel)
+                AgentDriverOverlay(
+                    highlights: store.browserModel.clickHighlights,
+                    isDriving: store.browserModel.isAgentDriving
+                )
+            }
             Divider()
             browserFooter
         }
@@ -70,6 +76,16 @@ struct ChatSplitView: View {
             if store.browserModel.isLoading {
                 ProgressView().controlSize(.small)
             }
+
+            // Agent driver toggle
+            Button {
+                store.browserModel.isAgentDriving.toggle()
+            } label: {
+                Image(systemName: store.browserModel.isAgentDriving ? "sparkles" : "hand.tap")
+                    .foregroundStyle(store.browserModel.isAgentDriving ? .orange : .secondary)
+            }
+            .buttonStyle(.borderless)
+            .help(store.browserModel.isAgentDriving ? "Agent driving — press Cmd+. to stop" : "Allow agent to drive browser")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

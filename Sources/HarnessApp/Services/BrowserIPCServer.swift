@@ -157,6 +157,7 @@ final class BrowserIPCServer {
             guard let url = URL(string: urlString), let bm = browserModel else {
                 return BrowserReply(id: cmd.id, ok: false, result: nil, error: "invalid URL or browser detached")
             }
+            bm.isAgentDriving = true
             let nav = await bm.navigate(to: url)
             return BrowserReply(id: cmd.id, ok: nav.succeeded,
                                 result: AnyCodable(["url": nav.url, "title": nav.title, "status": nav.succeeded ? "loaded" : "failed"]),
@@ -188,9 +189,11 @@ final class BrowserIPCServer {
             guard let bm = browserModel else {
                 return BrowserReply(id: cmd.id, ok: false, result: nil, error: "browser not attached")
             }
+            bm.isAgentDriving = true
             let (clicked, rect, error) = await bm.click(selector: selector)
             if let rect = rect {
                 AppLogger.process.info("browser_click: \(selector) at [\(rect.origin.x),\(rect.origin.y) \(rect.width)x\(rect.height)]")
+                bm.addClickHighlight(rect)
             }
             return BrowserReply(id: cmd.id, ok: clicked,
                                 result: AnyCodable([

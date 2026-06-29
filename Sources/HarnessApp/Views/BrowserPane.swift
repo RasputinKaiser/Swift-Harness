@@ -115,6 +115,11 @@ final class WebViewModel {
     var canGoForward = false
     var estimatedProgress: Double = 0
 
+    /// Agent driver state — true when the agent is actively controlling the browser
+    var isAgentDriving = false
+    /// Click highlights for the AgentDriverOverlay — capped at 5, auto-expired
+    var clickHighlights: [AgentDriverOverlay.ClickHighlight] = []
+
     @ObservationIgnored weak var webView: WKWebView?
     private var observers: [NSKeyValueObservation] = []
 
@@ -148,6 +153,20 @@ final class WebViewModel {
     func goForward() { webView?.goForward() }
     func reload() { webView?.reload() }
     func stopLoading() { webView?.stopLoading() }
+
+    @MainActor
+    func addClickHighlight(_ rect: CGRect) {
+        clickHighlights.append(AgentDriverOverlay.ClickHighlight(rect: rect, createdAt: Date()))
+        if clickHighlights.count > 5 {
+            clickHighlights.removeFirst(clickHighlights.count - 5)
+        }
+        // Auto-remove after 2s
+        let id = clickHighlights.last?.id
+        Task {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            if let id { clickHighlights.removeAll { $0.id == id } }
+        }
+    }
 }
 
 // MARK: - NSViewRepresentable wrapper
