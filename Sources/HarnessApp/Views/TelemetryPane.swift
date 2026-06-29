@@ -9,15 +9,11 @@ struct TelemetryPane: View {
     @State private var isLoading = true
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                header
-                summaryCards
-                toolUsageChart
-                recentSessionsList
-            }
-            .padding(24)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        DensePaneScaffold {
+            header
+            summaryCards
+            toolUsageChart
+            recentSessionsList
         }
         .navigationTitle("Telemetry")
         .task { await loadSessions() }

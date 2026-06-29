@@ -9,14 +9,10 @@ struct CostPane: View {
     @State private var thresholdEnabled = false
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                summaryCards
-                budgetSection
-                perTurnBreakdown
-            }
-            .padding(24)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        DensePaneScaffold {
+            summaryCards
+            budgetSection
+            perTurnBreakdown
         }
         .navigationTitle("Cost")
     }
