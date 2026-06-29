@@ -25,6 +25,12 @@ final class HarnessStore {
 
     var statusMessage: String = ""
 
+    /// Live session tailer. Used by SessionsPane.
+    var liveSession = SessionActivityStore()
+
+    /// Snapshot catalog. Used by SnapshotsPane.
+    var snapshotStore = SnapshotStore()
+
     // MARK: - Init
 
     init() {
