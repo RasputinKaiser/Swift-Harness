@@ -173,6 +173,20 @@ struct ChatPane: View {
                     .foregroundStyle(.secondary)
                     .padding(.top, 4)
             }
+            // Voice transcription preview
+            if store.voice.isRecording && !store.voice.partialTranscription.isEmpty {
+                Text(store.voice.partialTranscription)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.orange)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 4)
+            }
+            if let err = store.voice.lastError {
+                Text(err)
+                    .font(.caption2)
+                    .foregroundStyle(.red)
+                    .padding(.horizontal, 16)
+            }
             HStack(alignment: .bottom, spacing: 10) {
                 TextEditor(text: $draft)
                     .font(.system(.callout, design: .default))
@@ -182,6 +196,9 @@ struct ChatPane: View {
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
                     .focused($inputFocused)
                     .disabled(!store.bridge.isRunning)
+
+                // Hold-to-talk voice button
+                voiceButton
 
                 Button {
                     send()
@@ -198,6 +215,40 @@ struct ChatPane: View {
             .padding(.vertical, 10)
         }
         .background(.thinMaterial)
+    }
+
+    @ViewBuilder
+    private var voiceButton: some View {
+        Button {
+            // Toggle: if recording, stop + send; if not, start
+            if store.voice.isRecording {
+                Task { @MainActor in
+                    store.voice.stopRecording()
+                    let text = store.voice.finalizeTranscription()
+                    if !text.isEmpty && store.bridge.isRunning {
+                        store.bridge.send(text)
+                    }
+                }
+            } else {
+                Task {
+                    let ok = await store.voice.requestAuthorization()
+                    if ok {
+                        Task { @MainActor in
+                            store.voice.startRecording()
+                            draft = ""
+                        }
+                    }
+                }
+            }
+        } label: {
+            Image(systemName: store.voice.isRecording ? "stop.circle.fill" : "mic.circle.fill")
+                .font(.system(size: 28))
+                .foregroundStyle(store.voice.isRecording ? Color.red : Color.secondary)
+                .symbolEffect(.bounce, value: store.voice.isRecording)
+        }
+        .buttonStyle(.plain)
+        .help(store.voice.isRecording ? "Tap to stop and send" : "Tap to start voice input")
+        .disabled(!store.bridge.isRunning)
     }
 
     private func send() {

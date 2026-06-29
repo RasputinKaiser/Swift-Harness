@@ -55,6 +55,9 @@ final class HarnessStore {
     /// Prompt template library. Backs Templates pane.
     var templates = PromptTemplateStore()
 
+    /// Voice input manager for hold-to-talk dictation.
+    var voice = VoiceInputManager()
+
     /// Shared WKWebView model for the companion browser in ChatSplitView.
     var browserModel = WebViewModel()
 
