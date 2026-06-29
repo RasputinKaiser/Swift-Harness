@@ -46,6 +46,9 @@ final class HarnessStore {
     /// Project navigator. Backs the Projects sidebar section.
     var projects = ProjectStore()
 
+    /// Hooks/agents/commands catalog. Backs Manifest pane.
+    var manifest = ManifestStore()
+
     // MARK: - Init
 
     init() {

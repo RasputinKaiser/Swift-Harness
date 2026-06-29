@@ -36,6 +36,7 @@ struct ContentView: View {
         case .tests: TestsPane()
         case .snapshots: SnapshotsPane()
         case .plugin: PluginPane()
+        case .manifest: ManifestPane()
         case .memory: MemoryPane()
         case .journal: JournalPane()
         case .hooks: HooksPane()
