@@ -4,17 +4,13 @@ struct StatusPane: View {
     @Environment(HarnessStore.self) private var store
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                header
-                metricsGrid
-                if let entry = store.latestImprovement {
-                    latestImprovementCard(entry)
-                }
-                actions
+        DensePaneScaffold {
+            header
+            metricsGrid
+            if let entry = store.latestImprovement {
+                latestImprovementCard(entry)
             }
-            .padding(24)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            actions
         }
         .navigationTitle("Status")
         .toolbar {
@@ -29,18 +25,12 @@ struct StatusPane: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Harness Status")
-                .font(.largeTitle).bold()
-            if let ts = store.latestImprovementAt {
-                Text("Last update \(ts.formatted(date: .abbreviated, time: .shortened))")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("No improvement journal yet")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
+        PaneHeader("Harness Status",
+                    systemImage: "speedometer",
+                    subtitle: store.latestImprovementAt?
+                        .formatted(date: .abbreviated, time: .shortened)
+                        ?? "No improvement journal yet") {
+            EmptyView()
         }
     }
 

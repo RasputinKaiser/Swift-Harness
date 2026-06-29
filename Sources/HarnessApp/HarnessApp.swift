@@ -15,9 +15,11 @@ struct HarnessApp: App {
         WindowGroup {
             ContentView()
                 .environment(store)
-                .frame(minWidth: 900, minHeight: 600)
+                .frame(minWidth: 1100, minHeight: 720)
+                .frame(idealWidth: 1400, idealHeight: 900)
         }
         .windowToolbarStyle(.unified(showsTitle: true))
+        .windowResizability(.contentMinSize)
         .commands {
             CommandGroup(after: .appSettings) {
                 Button("Refresh Status") { Task { await store.refreshStatus() } }

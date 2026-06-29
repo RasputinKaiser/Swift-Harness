@@ -16,9 +16,9 @@ struct ChatSplitView: View {
     var body: some View {
         HSplitView {
             ChatPane()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(minWidth: 420, idealWidth: 640, maxWidth: .infinity, maxHeight: .infinity)
             companionBrowser
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(minWidth: 420, idealWidth: 640, maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {

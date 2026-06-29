@@ -4,12 +4,15 @@ struct ContentView: View {
     @Environment(HarnessStore.self) private var store
     @State private var selection: SidebarSection? = .status
     @State private var sidebarVisibility: NavigationSplitViewVisibility = .automatic
+    @State private var sidebarWidth: CGFloat = 220
 
     var body: some View {
         NavigationSplitView(columnVisibility: $sidebarVisibility) {
             sidebar
+                .navigationSplitViewColumnWidth(min: 200, ideal: sidebarWidth, max: 320)
         } detail: {
             detail
+                .navigationSplitViewColumnWidth(min: 600, ideal: 900)
         }
     }
 
