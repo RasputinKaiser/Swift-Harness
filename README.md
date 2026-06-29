@@ -1,6 +1,13 @@
 # Swift Harness
 
+![Swift 5.9+](https://img.shields.io/badge/swift-5.9%2B-orange)
+![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
+![Status: dev](https://img.shields.io/badge/status-dev-orange)
+
 Native macOS control surface for the [Self-Improvement-Plugin](https://github.com/RasputinKaiser/Self-Improvement-Plugin).
+
+**Suggested GitHub topics:** `swift`, `swiftui`, `macos`, `ai-agents`, `agent-harness`, `ncode`, `developer-tools`, `automation`, `evals`, `memory-fabric`
 
 Swift Harness is a SwiftUI desktop app for running, watching, and operating a local NCode self-improvement harness. It reads `.ncode` state from disk, drives harness scripts through subprocess calls, streams NCode chat sessions, shows Memory Fabric records, tracks hook events, manages snapshots, exposes plugin surfaces, and provides a built-in browser that agents can drive through a local IPC bridge.
 
@@ -31,6 +38,21 @@ It gives you panes for:
 - local computer state
 
 The app does not replace NCode. It sits beside it and gives the harness a desktop control panel.
+
+## Public status
+
+This project is public-readable documentation for a local-first macOS harness app. It assumes a working NCode setup, the companion Self-Improvement-Plugin, and local harness state under `~/.ncode`.
+
+The repo is useful if you are exploring:
+
+- native SwiftUI control surfaces for AI agents
+- local agent harness dashboards
+- Memory Fabric browsers
+- agent test and eval UIs
+- subprocess-driven chat bridges
+- browser IPC for local agents
+
+Expect sharp edges. This is an active development app, not a notarized public release.
 
 ## Current status
 
@@ -629,6 +651,16 @@ Most panes read local `.ncode` state. If the harness has not generated snapshots
     ├── build_and_run.sh
     └── make_app_bundle.sh
 ```
+
+## Security
+
+Swift Harness runs local subprocesses, reads local harness state, and opens a local browser IPC socket. Review the code before using it in another environment.
+
+Do not paste secrets, local transcripts, tokens, private repo content, or screenshots with private data into public issues. See `SECURITY.md` for vulnerability reporting notes.
+
+## Contributing
+
+Contributions are welcome through issues and pull requests. See `CONTRIBUTING.md` before opening larger changes.
 
 ## License
 
