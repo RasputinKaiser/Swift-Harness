@@ -16,7 +16,11 @@ struct TelemetryPane: View {
             recentSessionsList
         }
         .navigationTitle("Telemetry")
-        .task { await loadSessions() }
+        .task {
+            // Guard: only load if not already loaded — avoids re-reading all
+            // session metadata files from disk on every pane switch.
+            if sessions.isEmpty { await loadSessions() }
+        }
     }
 
     private var header: some View {

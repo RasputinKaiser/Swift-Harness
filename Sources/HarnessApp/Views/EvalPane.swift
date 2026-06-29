@@ -29,7 +29,11 @@ struct EvalPane: View {
                 }
             }
         }
-        .onAppear { refresh() }
+        .onAppear {
+            // Guard: only refresh if no cases loaded yet — avoids re-reading
+            // JSON case files + results.jsonl on every pane switch.
+            if store.evalCases.cases.isEmpty { refresh() }
+        }
     }
 
     private var header: some View {

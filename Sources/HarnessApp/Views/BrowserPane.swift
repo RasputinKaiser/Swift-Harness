@@ -141,7 +141,15 @@ final class WebViewModel {
             Task { @MainActor in self?.canGoForward = change.newValue ?? false }
         })
         observers.append(wv.observe(\.estimatedProgress, options: [.new]) { [weak self] _, change in
-            Task { @MainActor in self?.estimatedProgress = change.newValue ?? 0 }
+            let newValue = change.newValue ?? 0
+            // Throttle: skip if delta < 5%. Reduces ~20-30 main-thread Task
+            // hops per page load to ~5-10. ProgressView already interpolates.
+            if let self {
+                let delta = abs(newValue - self.estimatedProgress)
+                if delta >= 0.05 || newValue == 0 || newValue >= 1.0 {
+                    Task { @MainActor in self.estimatedProgress = newValue }
+                }
+            }
         })
     }
 

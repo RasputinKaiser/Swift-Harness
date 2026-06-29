@@ -18,6 +18,10 @@ final class HookEventStore {
     /// Substring to match against script name. Empty means no filter.
     var scriptFilter: String = ""
 
+    /// Cached outcome counters — updated incrementally on append, not
+    /// recomputed from scratch on every HooksPane render.
+    private(set) var outcomeCounters: [HookEvent.Outcome: Int] = [:]
+
     enum TailStatus: Equatable {
         case idle
         case waiting(URL)        // file doesn't exist yet
@@ -29,6 +33,9 @@ final class HookEventStore {
 
     @MainActor
     func start(loadHistory: Bool = true) {
+        // Guard: skip if already tailing — avoids canceling + recreating
+        // DispatchSource objects on repeated pane switches.
+        if case .tailing = status { return }
         detach()
         let url = HarnessClient.ncodeDir.appendingPathComponent("hook_events.jsonl", conformingTo: .text)
         if FileManager.default.fileExists(atPath: url.path) {
@@ -56,14 +63,6 @@ final class HookEventStore {
                 && (scriptFilter.isEmpty
                     || e.script.localizedCaseInsensitiveContains(scriptFilter))
         }
-    }
-
-    var outcomeCounters: [HookEvent.Outcome: Int] {
-        var out: [HookEvent.Outcome: Int] = [:]
-        for e in events {
-            out[e.outcome, default: 0] += 1
-        }
-        return out
     }
 
     // MARK: - Internals
@@ -178,8 +177,23 @@ final class HookEventStore {
     @MainActor
     private func append(_ new: [HookEvent]) {
         events.append(contentsOf: new)
+        // Incrementally update cached counters — avoids O(n) recompute on render
+        for e in new {
+            outcomeCounters[e.outcome, default: 0] += 1
+        }
         if events.count > maxEvents {
-            events.removeFirst(events.count - maxEvents)
+            let dropped = events.count - maxEvents
+            events.removeFirst(dropped)
+            // Recount after trimming (rare — only when cap exceeded)
+            recountOutcomes()
+        }
+    }
+
+    @MainActor
+    private func recountOutcomes() {
+        outcomeCounters.removeAll()
+        for e in events {
+            outcomeCounters[e.outcome, default: 0] += 1
         }
     }
 }
