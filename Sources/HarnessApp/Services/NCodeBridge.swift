@@ -153,22 +153,102 @@ final class NCodeBridge {
 
         switch type {
         case "system":
-            let msg = json["subtype"] as? String ?? "system"
-            events.append(.system(text: msg, ts: ts, uuid: uuid))
+            // Filter noise: hook_started/hook_response fire per-hook per-turn and
+            // bury the signal. Keep only meaningful subtypes (errors, init summary).
+            let subtype = (json["subtype"] as? String) ?? ""
+            switch subtype {
+            case "hook_started", "hook_response":
+                return // silent — too chatty
+            case "init":
+                // init payload is ~5KB of tool/skill/plugin metadata that's
+                // interesting as a status indicator but not as a transcript row.
+                let model = (json["model"] as? String) ?? "?"
+                let cwd = (json["cwd"] as? String) ?? "?"
+                let mcpCount = ((json["mcp_servers"] as? [[String: Any]])?.count) ?? 0
+                events.append(.system(text:
+                    "session init — model=\(model), cwd=\(cwd), \(mcpCount) MCP servers connected",
+                    ts: ts, uuid: uuid))
+            default:
+                events.append(.system(text: subtype, ts: ts, uuid: uuid))
+            }
         case "assistant":
-            let text = extractAssistantText(json["message"] as? [String: Any])
-            events.append(.assistant(text: text, ts: ts, uuid: uuid))
+            // Parse to rich content list — text + tool_use blocks handled separately.
+            let content = parseAssistantContent(json["message"] as? [String: Any])
+            events.append(.assistant(content: content, ts: ts, uuid: uuid))
         case "user":
-            // Echo from server (our sent message reflected back) — skip to avoid dup
+            // Server-echoed our message — skip
             break
         case "result":
-            let result = json["result"] as? String
-            events.append(.result(text: result ?? "(empty)", ts: ts, uuid: uuid))
+            // Pull useful metadata as a typed event.
+            let subtype = (json["subtype"] as? String) ?? "result"
+            let result = (json["result"] as? String) ?? ""
+            let durationMs = (json["duration_ms"] as? Int) ?? 0
+            let numTurns = (json["num_turns"] as? Int) ?? 1
+            let isError = (json["is_error"] as? Bool) ?? false
+            let usage = parseUsage(json["usage"] as? [String: Any])
+            let cost = (json["total_cost_usd"] as? Double) ?? 0
+            let stopReason = (json["stop_reason"] as? String) ?? "?"
+            events.append(.result(text: result, subtype: subtype,
+                                  durationMs: durationMs, numTurns: numTurns,
+                                  isError: isError, usage: usage,
+                                  cost: cost, stopReason: stopReason,
+                                  ts: ts, uuid: uuid))
+        case "rate_limit_event":
+            // Informational, not core. Silent.
+            return
         case "stream_event":
-            break
+            return
         default:
             events.append(.other(type: type, raw: line, ts: ts, uuid: uuid))
         }
+    }
+
+    private func parseAssistantContent(_ msg: [String: Any]?) -> [AssistantBlock] {
+        guard let msg = msg else { return [] }
+        guard let arr = msg["content"] as? [[String: Any]] else {
+            if let s = msg["content"] as? String {
+                return [.text(s)]
+            }
+            return []
+        }
+        var out: [AssistantBlock] = []
+        for block in arr {
+            guard let t = block["type"] as? String else { continue }
+            switch t {
+            case "text":
+                if let s = block["text"] as? String { out.append(.text(s)) }
+            case "tool_use":
+                let name = block["name"] as? String ?? "?"
+                let id = block["id"] as? String ?? UUID().uuidString
+                let input = block["input"] as? [String: Any] ?? [:]
+                out.append(.toolUse(name: name, toolUseId: id,
+                                    inputJSON: pretty(input)))
+            case "tool_result":
+                let id = block["tool_use_id"] as? String ?? "?"
+                let content = (block["content"] as? String) ?? ""
+                out.append(.toolResult(toolUseId: id,
+                                       content: content))
+            default:
+                continue
+            }
+        }
+        return out
+    }
+
+    private func parseUsage(_ u: [String: Any]?) -> TurnUsage? {
+        guard let u = u else { return nil }
+        return TurnUsage(
+            inputTokens: (u["input_tokens"] as? Int) ?? 0,
+            outputTokens: (u["output_tokens"] as? Int) ?? 0,
+            cacheRead: (u["cache_read_input_tokens"] as? Int) ?? 0,
+            cacheCreation: (u["cache_creation_input_tokens"] as? Int) ?? 0
+        )
+    }
+
+    private func pretty(_ x: Any) -> String {
+        guard let data = try? JSONSerialization.data(withJSONObject: x, options: [.prettyPrinted, .sortedKeys]),
+              let s = String(data: data, encoding: .utf8) else { return "\(x)" }
+        return s
     }
 
     private func parseTimestamp(_ v: Any?) -> Date? {
@@ -176,34 +256,6 @@ final class NCodeBridge {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return f.date(from: s) ?? ISO8601DateFormatter().date(from: s)
-    }
-
-    private func extractAssistantText(_ msg: [String: Any]?) -> String {
-        guard let msg = msg else { return "" }
-        let content = msg["content"]
-        if let s = content as? String { return s }
-        if let arr = content as? [[String: Any]] {
-            let texts = arr.compactMap { block -> String? in
-                let t = block["type"] as? String
-                if t == "text", let s = block["text"] as? String { return s }
-                if t == "tool_use" {
-                    let name = block["name"] as? String ?? "?"
-                    let input = block["input"] as? [String: Any] ?? [:]
-                    let inputStr: String
-                    if let p = input["file_path"] as? String {
-                        inputStr = "(file: \(p))"
-                    } else if let c = input["command"] as? String {
-                        inputStr = "(cmd: \(c.prefix(80)))"
-                    } else {
-                        inputStr = input.isEmpty ? "" : "(\(input.count) keys)"
-                    }
-                    return "[tool_use: \(name) \(inputStr)]"
-                }
-                return nil
-            }
-            return texts.joined(separator: "\n")
-        }
-        return ""
     }
 }
 

@@ -149,48 +149,214 @@ private struct ChatRow: View {
     let event: ChatEvent
 
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            Image(systemName: event.iconName)
-                .foregroundStyle(event.tint)
-                .frame(width: 18, alignment: .center)
-                .padding(.top, 1)
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 4) {
-                    Text(event.timestamp.formatted(date: .omitted, time: .standard))
-                        .font(.caption2.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                    Text(label)
-                        .font(.caption2.bold())
-                        .foregroundStyle(event.tint)
-                }
-                Text(event.text.isEmpty ? "(empty)" : event.text)
-                    .font(.system(.callout, design: .monospaced))
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(alignment: event.alignment, spacing: 4) {
+            switch event {
+            case .user(let text, let ts, _):
+                userBubble(text: text, ts: ts)
+            case .assistant(let blocks, let ts, _):
+                assistantMessages(blocks: blocks, ts: ts)
+            case .system(let text, let ts, _):
+                systemBanner(text: text, ts: ts)
+            case .result(let text, let subtype, let durationMs, let numTurns,
+                         let isError, let usage, let cost, let stopReason,
+                         let ts, _):
+                resultFooter(text: text, subtype: subtype, durationMs: durationMs,
+                             numTurns: numTurns, isError: isError, usage: usage,
+                             cost: cost, stopReason: stopReason, ts: ts)
+            case .other(let t, let raw, let ts, _):
+                otherRow(type: t, raw: raw, ts: ts)
             }
         }
-        .padding(.vertical, 3)
-        .padding(.horizontal, 6)
-        .background(rowBackground, in: RoundedRectangle(cornerRadius: 6))
+        .frame(maxWidth: .infinity, alignment: frameAlignment(for: event))
     }
 
-    private var label: String {
-        switch event {
-        case .user: "user"
-        case .assistant: "assistant"
-        case .system: "system"
-        case .result: "result"
-        case .other(let t, _, _, _): t
+    private func frameAlignment(for ev: ChatEvent) -> Alignment {
+        switch ev.alignment {
+        case .trailing: return .trailing
+        default: return .leading
         }
     }
 
-    private var rowBackground: Color {
-        switch event {
-        case .user: Color.blue.opacity(0.06)
-        case .assistant: Color.purple.opacity(0.04)
-        case .system: Color.gray.opacity(0.06)
-        case .result: Color.indigo.opacity(0.06)
-        case .other: Color.clear
+    // MARK: - Bubble variants
+
+    private func userBubble(text: String, ts: Date) -> some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            Text(text)
+                .font(.system(.body))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
+                .textSelection(.enabled)
+            stampLabel(ts)
         }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+    }
+
+    private func assistantMessages(blocks: [AssistantBlock], ts: Date) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
+                blockView(block)
+            }
+            stampLabel(ts)
+        }
+        .frame(alignment: .leading)
+    }
+
+    @ViewBuilder
+    private func blockView(_ block: AssistantBlock) -> some View {
+        switch block {
+        case .text(let s):
+            Text(s)
+                .font(.system(.body))
+                .textSelection(.enabled)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.purple.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
+                .frame(maxWidth: .infinity, alignment: .leading)
+        case .toolUse(let name, let id, let inputJSON):
+            ToolUseDisclosure(name: name, toolUseId: id, inputJSON: inputJSON)
+        case .toolResult(let toolUseId, let content):
+            ToolResultCard(toolUseId: toolUseId, content: content)
+        }
+    }
+
+    private func systemBanner(text: String, ts: Date) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "gearshape")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            Text(text)
+                .font(.caption.italic())
+                .foregroundStyle(.tertiary)
+            Text(ts.formatted(date: .omitted, time: .standard))
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func resultFooter(text: String, subtype: String, durationMs: Int,
+                              numTurns: Int, isError: Bool, usage: TurnUsage?,
+                              cost: Double, stopReason: String, ts: Date) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: isError ? "xmark.octagon.fill" : "flag.checkered")
+                    .foregroundStyle(isError ? .red : .green)
+                Text(subtype.uppercased())
+                    .font(.caption2.bold())
+                    .foregroundStyle(isError ? .red : .green)
+                Text(stopReason)
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("\(durationMs)ms")
+                    .font(.caption2.bold().monospacedDigit())
+                if numTurns > 1 {
+                    Text("· \(numTurns) turns")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if !text.isEmpty {
+                Text(text)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            if let u = usage {
+                HStack(spacing: 10) {
+                    Text("in:\(u.inputTokens)")
+                    Text("out:\(u.outputTokens)")
+                    if u.cacheRead > 0 { Text("cache:\(u.cacheRead)") }
+                    Text(String(format: "$%.4f", cost))
+                }
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func otherRow(type: String, raw: String, ts: Date) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("[\(type)]")
+                .font(.caption2.bold().monospaced())
+                .foregroundStyle(.secondary)
+            Text(raw.prefix(200))
+                .font(.caption.monospaced())
+                .foregroundStyle(.tertiary)
+                .lineLimit(2)
+                .truncationMode(.tail)
+            stampLabel(ts)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func stampLabel(_ ts: Date) -> some View {
+        Text(ts.formatted(date: .omitted, time: .standard))
+            .font(.caption2.monospacedDigit())
+            .foregroundStyle(.tertiary)
+    }
+}
+
+private struct ToolUseDisclosure: View {
+    let name: String
+    let toolUseId: String
+    let inputJSON: String
+    @State private var expanded = false
+
+    var body: some View {
+        DisclosureGroup(isExpanded: $expanded) {
+            Text(inputJSON)
+                .font(.system(.caption, design: .monospaced))
+                .textSelection(.enabled)
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 6))
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "wrench.and.screwdriver")
+                    .foregroundStyle(.orange)
+                Text(name)
+                    .font(.system(.callout, design: .monospaced).bold())
+                Spacer()
+                Text(toolUseId.prefix(8))
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+        }
+        .padding(.horizontal, 0)
+    }
+}
+
+private struct ToolResultCard: View {
+    let toolUseId: String
+    let content: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.seal")
+                    .foregroundStyle(.green)
+                Text("result — \(toolUseId.prefix(8))")
+                    .font(.caption.bold().monospaced())
+            }
+            Text(content.prefix(800))
+                .font(.system(.caption, design: .monospaced))
+                .textSelection(.enabled)
+                .lineLimit(6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

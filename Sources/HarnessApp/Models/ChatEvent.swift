@@ -3,10 +3,13 @@ import SwiftUI
 
 /// One event in the NCode bridge chat stream.
 enum ChatEvent: Identifiable, Hashable {
+
     case user(text: String, ts: Date, uuid: String)
-    case assistant(text: String, ts: Date, uuid: String)
+    case assistant(content: [AssistantBlock], ts: Date, uuid: String)
     case system(text: String, ts: Date, uuid: String)
-    case result(text: String, ts: Date, uuid: String)
+    case result(text: String, subtype: String, durationMs: Int, numTurns: Int,
+                isError: Bool, usage: TurnUsage?, cost: Double, stopReason: String,
+                ts: Date, uuid: String)
     case other(type: String, raw: String, ts: Date, uuid: String)
 
     var id: String {
@@ -14,7 +17,7 @@ enum ChatEvent: Identifiable, Hashable {
         case .user(_, _, let u): "u-\(u)"
         case .assistant(_, _, let u): "a-\(u)"
         case .system(_, _, let u): "s-\(u)"
-        case .result(_, _, let u): "r-\(u)"
+        case .result(_, _, _, _, _, _, _, _, _, let u): "r-\(u)"
         case .other(_, _, _, let u): "o-\(u)"
         }
     }
@@ -24,7 +27,7 @@ enum ChatEvent: Identifiable, Hashable {
         case .user(_, let t, _),
              .assistant(_, let t, _),
              .system(_, let t, _),
-             .result(_, let t, _),
+             .result(_, _, _, _, _, _, _, _, let t, _),
              .other(_, _, let t, _):
             t
         }
@@ -42,21 +45,53 @@ enum ChatEvent: Identifiable, Hashable {
 
     var tint: Color {
         switch self {
-        case .user: .blue
-        case .assistant: .purple
-        case .system: .gray
-        case .result: .indigo
-        case .other: .secondary
+        case .user: return .blue
+        case .assistant: return .purple
+        case .system: return Color.gray
+        case .result(let _, let subtype, _, _, let isError, _, _, _, _, _):
+            if isError { return .red }
+            return subtype == "success" ? .green : .indigo
+        case .other: return Color.secondary
         }
     }
 
-    var text: String {
+    var alignment: HorizontalAlignment {
         switch self {
-        case .user(let s, _, _): s
-        case .assistant(let s, _, _): s
-        case .system(let s, _, _): s
-        case .result(let s, _, _): s
-        case .other(let t, let raw, _, _): "[\(t)] \(raw.prefix(120))"
+        case .user: .trailing
+        default: .leading
         }
     }
+}
+
+/// One block of an assistant message. Mirrors Anthropic content-block shape.
+enum AssistantBlock: Hashable {
+    case text(String)
+    case toolUse(name: String, toolUseId: String, inputJSON: String)
+    case toolResult(toolUseId: String, content: String)
+
+    var iconName: String {
+        switch self {
+        case .text: "text.alignleft"
+        case .toolUse: "wrench.and.screwdriver"
+        case .toolResult: "checkmark.seal"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .text: .purple
+        case .toolUse: .orange
+        case .toolResult: .green
+        }
+    }
+}
+
+/// Token usage for one turn, parsed from result event.
+struct TurnUsage: Hashable {
+    let inputTokens: Int
+    let outputTokens: Int
+    let cacheRead: Int
+    let cacheCreation: Int
+
+    var totalTokens: Int { inputTokens + outputTokens }
 }
