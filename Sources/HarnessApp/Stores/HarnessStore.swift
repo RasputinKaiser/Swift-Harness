@@ -72,6 +72,10 @@ final class HarnessStore {
     var evalCases = EvalCaseStore()
     var eval = EvalRunner()
 
+    /// Pane usage telemetry — increments each time a pane is selected.
+    /// Persists to ~/.ncode/usage-data/pane-usage.json for trend analysis.
+    var paneUsage = PaneUsageTracker()
+
     // MARK: - Init
 
     init() {

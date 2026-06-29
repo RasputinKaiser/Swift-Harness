@@ -17,9 +17,15 @@ struct ContentView: View {
     }
 
     private var sidebar: some View {
-        List(SidebarSection.allCases, selection: $selection) { section in
-            NavigationLink(value: section) {
-                Label(section.title, systemImage: section.icon)
+        List(selection: $selection) {
+            ForEach(SidebarSection.Category.allCases) { category in
+                Section(category.title) {
+                    ForEach(SidebarSection.sections(in: category)) { section in
+                        NavigationLink(value: section) {
+                            Label(section.title, systemImage: section.icon)
+                        }
+                    }
+                }
             }
         }
         .navigationTitle("Harness")
@@ -28,6 +34,11 @@ struct ContentView: View {
             SidebarFooter()
                 .padding(.horizontal, 8)
                 .padding(.vertical, 6)
+        }
+        .onChange(of: selection) { _, newSection in
+            if let newSection {
+                store.paneUsage.track(newSection.rawValue)
+            }
         }
     }
 

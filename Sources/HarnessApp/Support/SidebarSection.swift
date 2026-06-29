@@ -5,6 +5,34 @@ enum SidebarSection: String, CaseIterable, Identifiable, Hashable {
 
     var id: String { rawValue }
 
+    /// Group panes into sections for the sidebar — reduces navigation tax
+    /// by clustering related panes under a common header.
+    enum Category: String, CaseIterable, Identifiable {
+        case chat, dashboards, memory, plugins, advanced
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .chat: "Chat"
+            case .dashboards: "Dashboards"
+            case .memory: "Memory & History"
+            case .plugins: "Plugin Surfaces"
+            case .advanced: "Advanced"
+            }
+        }
+    }
+
+    var category: Category {
+        switch self {
+        case .projects, .browser: .chat
+        case .status, .telemetry, .cost, .tests, .journal: .dashboards
+        case .memory, .snapshots, .hooks: .memory
+        case .manifest, .plugin, .skills, .automation: .plugins
+        case .agents, .computer, .templates, .eval: .advanced
+        }
+    }
+
     var title: String {
         switch self {
         case .projects: "Projects"
@@ -49,5 +77,10 @@ enum SidebarSection: String, CaseIterable, Identifiable, Hashable {
         case .browser: "globe"
         case .eval: "chart.bar.doc.horizontal"
         }
+    }
+
+    /// Sections in display order within each category.
+    static func sections(in category: Category) -> [SidebarSection] {
+        allCases.filter { $0.category == category }
     }
 }
