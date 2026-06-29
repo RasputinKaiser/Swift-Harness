@@ -9,6 +9,7 @@ import Observation
 final class EvalCaseStore {
 
     private(set) var cases: [EvalCase] = []
+    private(set) var lastRuns: [String: EvalRun] = [:]  // caseId → most recent run
     private(set) var lastError: String?
     private(set) var loadedAt: Date?
 
@@ -23,12 +24,46 @@ final class EvalCaseStore {
     func refresh() {
         ensureSeeds()
         cases = discoverCases()
+        lastRuns = loadLastRuns()
         loadedAt = Date()
     }
 
     /// Look up a case by id.
     func find(byId id: String) -> EvalCase? {
         cases.first { $0.id == id }
+    }
+
+    /// Most recent finished run for a case, if any.
+    func lastRun(for caseId: String) -> EvalRun? {
+        lastRuns[caseId]
+    }
+
+    // MARK: - Run history
+
+    /// Read ~/.ncode/eval/results.jsonl and bucket runs by caseId, keeping
+    /// only the most recent per case. Defensive on malformed lines.
+    private func loadLastRuns() -> [String: EvalRun] {
+        guard let data = try? Data(contentsOf: resultsPath),
+              let text = String(data: data, encoding: .utf8) else {
+            return [:]
+        }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        var byCase: [String: EvalRun] = [:]
+        for line in text.split(separator: "\n") {
+            guard let lineData = line.data(using: .utf8),
+                  let run = try? decoder.decode(EvalRun.self, from: lineData) else {
+                continue
+            }
+            // Keep newer runs (later in file = more recent)
+            if let existing = byCase[run.caseId],
+               let exTime = existing.finishedAt, let newTime = run.finishedAt,
+               exTime >= newTime {
+                continue
+            }
+            byCase[run.caseId] = run
+        }
+        return byCase
     }
 
     // MARK: - Discovery

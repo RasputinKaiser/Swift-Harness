@@ -84,8 +84,9 @@ struct EvalRun: Identifiable, Codable {
     let finishedAt: Date?
     let score: Double?
     let passed: Bool?
-    let transcriptPath: String?
+    let sandboxURL: URL?
     let checkResults: [EvalCheck.Result]
+    let toolCount: Int
     let model: String?
     let errorMessage: String?
 
@@ -97,9 +98,27 @@ struct EvalRun: Identifiable, Codable {
         self.finishedAt = nil
         self.score = nil
         self.passed = nil
-        self.transcriptPath = nil
+        self.sandboxURL = nil
         self.checkResults = []
+        self.toolCount = 0
         self.model = model
         self.errorMessage = nil
+    }
+
+    init(caseId: String, caseVersion: Int, model: String?, sandboxURL: URL,
+         finishedAt: Date, score: Double, passed: Bool,
+         checkResults: [EvalCheck.Result], toolCount: Int, errorMessage: String?) {
+        self.id = UUID()
+        self.caseId = caseId
+        self.caseVersion = caseVersion
+        self.startedAt = Date()
+        self.finishedAt = finishedAt
+        self.score = score
+        self.passed = passed
+        self.sandboxURL = sandboxURL
+        self.checkResults = checkResults
+        self.toolCount = toolCount
+        self.model = model
+        self.errorMessage = errorMessage
     }
 }

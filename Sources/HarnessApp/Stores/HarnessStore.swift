@@ -64,6 +64,11 @@ final class HarnessStore {
     /// Browser IPC server — receives tool calls from the agent via Unix socket.
     var browserIPC = BrowserIPCServer()
 
+    /// Evaluation harness — case store + runner for measuring agent quality
+    /// against benchmark cases. Phase 1: cases + grader; Phase 2: runner.
+    var evalCases = EvalCaseStore()
+    var eval = EvalRunner()
+
     // MARK: - Init
 
     init() {
