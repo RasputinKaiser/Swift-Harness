@@ -108,6 +108,11 @@ struct ChatPane: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .truncationMode(.middle)
+            if store.bridge.isResuming {
+                Label("Resumed", systemImage: "arrow.uturn.forward.circle")
+                    .font(.caption2.bold())
+                    .foregroundStyle(.blue)
+            }
             Spacer()
             if let err = store.bridge.lastError {
                 Label(err, systemImage: "exclamationmark.triangle.fill")

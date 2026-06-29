@@ -89,6 +89,14 @@ struct ProjectsView: View {
                     } label: {
                         Label("Start new chat…", systemImage: "plus.message")
                     }
+                    if let sid = selectedSessionID,
+                       let s = sessions.first(where: { $0.sessionId == sid }) {
+                        Button {
+                            Task { await resumeSession(s) }
+                        } label: {
+                            Label("Continue session in chat…", systemImage: "arrow.uturn.forward.circle")
+                        }
+                    }
                 }
             }
             .navigationTitle(project.displayName)
@@ -148,8 +156,19 @@ struct ProjectsView: View {
         await MainActor.run {
             store.bridge.start(cwd: cwd)
         }
-        // Give ncode a moment to write its initial transcript file, then refresh
-        // so the new session appears in the middle column list.
+        try? await Task.sleep(nanoseconds: 1_500_000_000)
+        store.projects.refresh()
+    }
+
+    private func resumeSession(_ session: SessionDescriptor) async {
+        let cwd = session.cwdURL ?? HarnessClient.home
+        if store.bridge.isRunning {
+            store.bridge.stop()
+        }
+        await MainActor.run {
+            store.bridge.resume(session.sessionId, cwd: cwd)
+        }
+        // Clear transcript so the new session's events are visible
         try? await Task.sleep(nanoseconds: 1_500_000_000)
         store.projects.refresh()
     }

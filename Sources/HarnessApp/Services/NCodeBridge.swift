@@ -18,6 +18,10 @@ final class NCodeBridge {
     private(set) var lastError: String?
     private(set) var sessionId: String = UUID().uuidString
     private(set) var cwd: URL = HarnessClient.home
+    /// True when this bridge is a fork-continue of an existing session (via --resume)
+    private(set) var isResuming: Bool = false
+    /// The original session ID being resumed from (if any)
+    private(set) var resumedFromSID: String?
 
     private(set) var events: [ChatEvent] = []
     private(set) var statusBanner: String = ""
@@ -47,7 +51,27 @@ final class NCodeBridge {
         isStarting = true
         if let cwd { self.cwd = cwd }
         self.sessionId = UUID().uuidString
-        statusBanner = "Starting NCode session…"
+        self.isResuming = false
+        self.resumedFromSID = nil
+        _startInternal()
+    }
+
+    /// Fork-continue an existing session by SID. The new subprocess picks up
+    /// the conversation context from the original session's transcript.
+    @MainActor
+    func resume(_ sid: String, cwd: URL? = nil) {
+        if isRunning || isStarting { return }
+        isStarting = true
+        if let cwd { self.cwd = cwd }
+        self.sessionId = UUID().uuidString
+        self.isResuming = true
+        self.resumedFromSID = sid
+        _startInternal()
+    }
+
+    @MainActor
+    private func _startInternal() {
+        statusBanner = isResuming ? "Resuming session…" : "Starting NCode session…"
 
         let p = Process()
         let binPath = HarnessClient.home
@@ -61,13 +85,20 @@ final class NCodeBridge {
             return
         }
         p.executableURL = URL(fileURLWithPath: resolvedBin)
-        p.arguments = [
+
+        var args = [
             "--print",
             "--input-format", "stream-json",
             "--output-format", "stream-json",
+            "--include-partial-messages",
             "--session-id", sessionId,
             "--permission-mode", isPlanMode ? "plan" : "bypassPermissions",
         ]
+        if isResuming, let sid = resumedFromSID {
+            args += ["--resume", sid]
+        }
+
+        p.arguments = args
         p.currentDirectoryURL = self.cwd
 
         let outPipe = Pipe()
