@@ -115,7 +115,7 @@ final class WebViewModel {
     var canGoForward = false
     var estimatedProgress: Double = 0
 
-    private weak var webView: WKWebView?
+    @ObservationIgnored weak var webView: WKWebView?
     private var observers: [NSKeyValueObservation] = []
 
     func attach(_ wv: WKWebView) {

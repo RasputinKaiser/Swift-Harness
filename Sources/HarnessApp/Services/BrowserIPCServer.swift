@@ -115,65 +115,76 @@ final class BrowserIPCServer {
     }
 
     private func handleClient(_ fd: Int32) {
-        // Read one line (newline-delimited JSON)
         var buf = [UInt8]()
         var byte: UInt8 = 0
         while read(fd, &byte, 1) == 1 {
-            if byte == 0x0A { break }  // newline
+            if byte == 0x0A { break }
             buf.append(byte)
         }
-
-        guard !buf.isEmpty else {
+        guard !buf.isEmpty else { close(fd); return }
+        guard let cmd = try? JSONDecoder().decode(BrowserCommand.self, from: Data(buf)) else {
+            close(fd); return
+        }
+        Task { [weak self] in
+            guard let self else { close(fd); return }
+            let reply = await self.executeCommand(cmd)
+            guard let data = try? JSONEncoder().encode(reply) else { close(fd); return }
+            var frame = data; frame.append(0x0A)
+            frame.withUnsafeBytes { _ = write(fd, $0.baseAddress, frame.count) }
             close(fd)
-            return
         }
-
-        let data = Data(buf)
-        guard let cmd = try? JSONDecoder().decode(BrowserCommand.self, from: data) else {
-            AppLogger.process.error("BrowserIPC: failed to decode command")
-            close(fd)
-            return
-        }
-
-        // Execute on MainActor (browserModel reads must be main-thread-safe)
-        // For Phase 1, we do a blocking synchronous read — safe for get_url/get_title.
-        // Phase 2+ will move to async for navigate/click/screenshot.
-        let reply = executeCommandSync(cmd)
-
-        // Send reply
-        guard let replyData = try? JSONEncoder().encode(reply) else {
-            close(fd)
-            return
-        }
-        var frame = replyData
-        frame.append(0x0A)  // newline delimiter
-        frame.withUnsafeBytes { ptr in
-            _ = write(fd, ptr.baseAddress, frame.count)
-        }
-        close(fd)
     }
 
-    // MARK: - Command execution (synchronous for Phase 1)
-
-    private func executeCommandSync(_ cmd: BrowserCommand) -> BrowserReply {
+    @MainActor
+    private func executeCommand(_ cmd: BrowserCommand) async -> BrowserReply {
         switch cmd.tool {
         case "browser_get_url":
-            let url = DispatchQueue.main.sync {
-                browserModel?.url?.absoluteString ?? ""
-            }
-            return BrowserReply(id: cmd.id, ok: true,
-                                result: AnyCodable(["url": url]), error: nil)
-
+            let url = browserModel?.url?.absoluteString ?? ""
+            return BrowserReply(id: cmd.id, ok: true, result: AnyCodable(["url": url]), error: nil)
         case "browser_get_title":
-            let title = DispatchQueue.main.sync {
-                browserModel?.title ?? ""
+            let title = browserModel?.title ?? ""
+            return BrowserReply(id: cmd.id, ok: true, result: AnyCodable(["title": title]), error: nil)
+        case "browser_navigate":
+            let urlString = (cmd.args?["url"]?.value as? String) ?? ""
+            switch BrowserGate.checkURL(urlString) {
+            case .blocked(let reason):
+                return BrowserReply(id: cmd.id, ok: false, result: nil, error: reason)
+            case .allowed: break
             }
+            if BrowserGate.isLoginOrigin(urlString) {
+                AppLogger.process.warning("browser_navigate to login origin: \(urlString)")
+            }
+            guard let url = URL(string: urlString), let bm = browserModel else {
+                return BrowserReply(id: cmd.id, ok: false, result: nil, error: "invalid URL or browser detached")
+            }
+            let nav = await bm.navigate(to: url)
+            return BrowserReply(id: cmd.id, ok: nav.succeeded,
+                                result: AnyCodable(["url": nav.url, "title": nav.title, "status": nav.succeeded ? "loaded" : "failed"]),
+                                error: nav.error)
+        case "browser_eval":
+            let js = (cmd.args?["js"]?.value as? String) ?? ""
+            switch BrowserGate.checkJS(js) {
+            case .blocked(let reason):
+                return BrowserReply(id: cmd.id, ok: false, result: nil, error: reason)
+            case .allowed: break
+            }
+            guard let bm = browserModel else {
+                return BrowserReply(id: cmd.id, ok: false, result: nil, error: "browser not attached")
+            }
+            let (result, error) = await bm.evalJS(js)
+            return BrowserReply(id: cmd.id, ok: error == nil,
+                                result: AnyCodable(["result": result ?? "null"]), error: error)
+        case "browser_extract":
+            let selector = (cmd.args?["selector"]?.value as? String) ?? ""
+            let attr = cmd.args?["attr"]?.value as? String
+            guard let bm = browserModel else {
+                return BrowserReply(id: cmd.id, ok: false, result: nil, error: "browser not attached")
+            }
+            let (html, text, count) = await bm.extract(selector: selector, attr: attr)
             return BrowserReply(id: cmd.id, ok: true,
-                                result: AnyCodable(["title": title]), error: nil)
-
+                                result: AnyCodable(["html": html, "text": text, "count": count]), error: nil)
         default:
-            return BrowserReply(id: cmd.id, ok: false, result: nil,
-                                error: "unknown tool: \(cmd.tool)")
+            return BrowserReply(id: cmd.id, ok: false, result: nil, error: "unknown tool: \(cmd.tool)")
         }
     }
 }
