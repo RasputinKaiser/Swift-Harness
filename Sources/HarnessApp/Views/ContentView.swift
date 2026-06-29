@@ -48,6 +48,7 @@ struct ContentView: View {
         case .journal: JournalPane()
         case .hooks: HooksPane()
         case .browser: BrowserPane()
+        case .eval: EvalPane()
         case .none: ContentUnavailableView(
             "Select a section",
             systemImage: "sidebar.left",
