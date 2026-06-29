@@ -12,13 +12,14 @@ import WebKit
 struct ChatSplitView: View {
     @Environment(HarnessStore.self) private var store
     @State private var urlInput: String = ""
+    @AppStorage("chatSplitFraction") private var chatSplitFraction: Double = 0.5
 
     var body: some View {
         HSplitView {
             ChatPane()
-                .frame(minWidth: 420, idealWidth: 640, maxWidth: .infinity, maxHeight: .infinity)
+                .frame(minWidth: 380, idealWidth: 560, maxWidth: .infinity, maxHeight: .infinity)
             companionBrowser
-                .frame(minWidth: 420, idealWidth: 640, maxWidth: .infinity, maxHeight: .infinity)
+                .frame(minWidth: 380, idealWidth: 560, maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {

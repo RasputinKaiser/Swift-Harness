@@ -15,9 +15,10 @@ struct HarnessApp: App {
         WindowGroup {
             ContentView()
                 .environment(store)
-                .frame(minWidth: 1100, minHeight: 720)
+                .frame(minWidth: 1080, minHeight: 680)
                 .frame(idealWidth: 1400, idealHeight: 900)
         }
+        .defaultSize(width: 1280, height: 820)
         .windowToolbarStyle(.unified(showsTitle: true))
         .windowResizability(.contentMinSize)
         .commands {

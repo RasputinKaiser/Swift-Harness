@@ -52,8 +52,5 @@ struct PaneHeader<Actions: View>: View {
             Spacer()
             actions
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 16)
-        .padding(.bottom, 12)
     }
 }

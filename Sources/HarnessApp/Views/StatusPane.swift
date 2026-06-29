@@ -84,7 +84,7 @@ struct StatusPane: View {
             }
             .frame(maxHeight: 220)
             .padding(12)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: DesignRadius.medium, style: .continuous))
         }
     }
 
@@ -119,6 +119,7 @@ struct StatusPane: View {
     }
 }
 
+
 private struct MetricCard: View {
     let title: String
     let value: String
@@ -140,7 +141,6 @@ private struct MetricCard: View {
                 .monospacedDigit()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .materialCard(radius: DesignRadius.large, padding: 14)
     }
 }

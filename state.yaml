@@ -1,0 +1,39 @@
+version: 1
+project: harness-app
+updated_at: "2026-06-29T21:33:57Z"
+status: repo_hygiene_verified
+source:
+  path: "/Users/ianzvirbulis/Code/harness-app"
+  kind: "SwiftPM macOS app"
+  git_branch: "main"
+  git_tracking: "origin/main"
+  remote_freshness: "git fetch --prune origin completed; HEAD and origin/main match"
+  license: "MIT"
+  public_author: "RasputinKaiser"
+runtime_data:
+  ncode_dir: "/Users/ianzvirbulis/.ncode"
+  role: "Harness runtime data and installed plugin surface; not the app source checkout."
+packaged_app:
+  path: "/Users/ianzvirbulis/Applications/harness-app/HarnessApp.app"
+  bundle_id: "com.rasputinkaiser.harnessapp"
+  version: "0.7.0-dev"
+ui_ux_plan:
+  artifact: "/Users/ianzvirbulis/Code/harness-app/docs/ui-ux-improvement-plan.md"
+  first_slice:
+    - "sidebar job-to-be-done regrouping"
+    - "StatusPane health strip and attention-needed triage"
+    - "proof badges for live/cached/stale/unavailable/unknown"
+    - "move ambiguous sidebar footer status into contextual pane or row"
+verification:
+  build: "swift build"
+  run: "script/build_and_run.sh"
+  package: "script/make_app_bundle.sh"
+  current_pass:
+    - "git fetch --prune origin"
+    - "git rev-list --left-right --count HEAD...origin/main == 0 0"
+    - "LICENSE is MIT and attributed to RasputinKaiser"
+    - "swift build passed on 2026-06-29T21:32:56Z"
+    - "script/make_app_bundle.sh passed on 2026-06-29T21:33:57Z"
+  current_notes:
+    - "Fixed AppStorage column-width storage from CGFloat to Double so the current local UI edits compile."
+    - "Fixed bundle signing to pass entitlements via a temporary plist instead of stdin fallback."

@@ -10,6 +10,11 @@ struct CostPane: View {
 
     var body: some View {
         DensePaneScaffold {
+            PaneHeader("Cost Tracking",
+                        systemImage: "dollarsign.circle.fill",
+                        subtitle: store.bridge.isRunning ? "Live session in progress" : "No active session") {
+                EmptyView()
+            }
             summaryCards
             budgetSection
             perTurnBreakdown

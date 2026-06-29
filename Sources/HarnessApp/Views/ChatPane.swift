@@ -214,7 +214,7 @@ struct ChatPane: View {
                         .font(.system(size: 28))
                         .foregroundStyle(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? AnyShapeStyle(.tertiary) : AnyShapeStyle(Color.accentColor))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(TactileButtonStyle())
                 .keyboardShortcut(.return, modifiers: .command)
                 .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !store.bridge.isRunning)
             }
@@ -242,7 +242,7 @@ struct ChatPane: View {
                     : store.voiceOut.isSpeaking ? Color.green : Color.secondary)
                 .symbolEffect(.bounce, value: store.voiceOut.isSpeaking)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(TactileButtonStyle())
         .help(store.voiceOut.isAutoSpeakOn ? "Auto-speak on — disable in Session menu" :
             store.voiceOut.isSpeaking ? "Speaking — tap to stop" :
             "Tap to read latest response aloud")
@@ -282,7 +282,7 @@ struct ChatPane: View {
                 .foregroundStyle(store.voice.isRecording ? Color.red : Color.secondary)
                 .symbolEffect(.bounce, value: store.voice.isRecording)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(TactileButtonStyle())
         .help(store.voice.isRecording ? "Tap to stop and send" : "Tap to start voice input")
         .disabled(!store.bridge.isRunning)
     }

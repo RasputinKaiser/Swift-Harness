@@ -52,6 +52,7 @@ struct PaneScaffold<Content: View>: View {
     }
 }
 
+
 /// Tight padding variant for panes that show dense grids/lists and benefit
 /// from more horizontal real estate (Status, Telemetry).
 struct DensePaneScaffold<Content: View>: View {
@@ -81,5 +82,54 @@ struct FullWidthPaneScaffold<Content: View>: View {
         PaneScaffold(readableMaxWidth: nil) {
             content
         }
+    }
+}
+
+/// Concentric border-radius scale.
+///
+/// `outer = inner + padding` — nested rounded surfaces need their outer
+/// radius to exceed the inner by roughly the inner padding. Picking from
+/// one scale keeps card shapes in a single visual family across the app.
+enum DesignRadius {
+    static let small: CGFloat = 6     // badges, code chips, mini buttons
+    static let medium: CGFloat = 10    // cards in a grid, code blocks
+    static let large: CGFloat = 14    // section containers, sheets, modals
+}
+
+/// Tactile press feedback. Scales to 0.96 while pressed, spring returns.
+///
+/// Use on primary / bordered-prominent buttons where tactile feel matters.
+/// For borderless icon buttons in tight toolbars, prefer `.buttonStyle(.borderless)`
+/// to keep hit areas tight.
+struct TactileButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7),
+                       value: configuration.isPressed)
+            .contentShape(Rectangle())
+    }
+}
+
+/// Standard card surface — `.regularMaterial` + 0.5pt hairline border +
+/// a soft shadow instead of relying on a hard `Divider` for separation.
+///
+/// Layer with concentric radius in mind: a card that hosts another rounded
+/// element should use `DesignRadius.large` while the inner uses `medium` or
+/// `small`, so `outer inner + padding`.
+extension View {
+    func materialCard(radius: CGFloat = DesignRadius.large,
+                      padding: CGFloat = 14) -> some View {
+        self
+            .padding(padding)
+            .background(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .fill(.regularMaterial)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .strokeBorder(.black.opacity(0.06), lineWidth: 0.5)
+            )
+            .shadow(color: .black.opacity(0.04), radius: 4, y: 2)
     }
 }

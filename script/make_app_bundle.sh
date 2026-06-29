@@ -104,11 +104,9 @@ if [ -z "$IDENTITY" ]; then
   # Ad-hoc sign if no Developer ID configured. Works locally; not distributable.
   IDENTITY="-"
 fi
-set +e
-codesign --force --deep --sign "$IDENTITY" \
-  --options runtime \
-  --entitlements - \
-  "$APP_ROOT" <<ENT_EOF
+ENTITLEMENTS_FILE="$(mktemp "${TMPDIR:-/tmp}/harness-app-entitlements.XXXXXX.plist")"
+trap 'rm -f "$ENTITLEMENTS_FILE"' EXIT
+cat > "$ENTITLEMENTS_FILE" <<ENT_EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -124,6 +122,11 @@ codesign --force --deep --sign "$IDENTITY" \
 </dict>
 </plist>
 ENT_EOF
+set +e
+codesign --force --deep --sign "$IDENTITY" \
+  --options runtime \
+  --entitlements "$ENTITLEMENTS_FILE" \
+  "$APP_ROOT"
 
 SIGN_RC=$?
 set -e

@@ -4,15 +4,16 @@ struct ContentView: View {
     @Environment(HarnessStore.self) private var store
     @State private var selection: SidebarSection? = .status
     @State private var sidebarVisibility: NavigationSplitViewVisibility = .automatic
-    @State private var sidebarWidth: CGFloat = 220
+    @AppStorage("sidebarWidth") private var sidebarWidth: Double = 220
+    @AppStorage("detailWidth") private var detailWidth: Double = 900
 
     var body: some View {
         NavigationSplitView(columnVisibility: $sidebarVisibility) {
             sidebar
-                .navigationSplitViewColumnWidth(min: 200, ideal: sidebarWidth, max: 320)
+                .navigationSplitViewColumnWidth(min: 200, ideal: CGFloat(sidebarWidth), max: 320)
         } detail: {
             detail
-                .navigationSplitViewColumnWidth(min: 600, ideal: 900)
+                .navigationSplitViewColumnWidth(min: 620, ideal: CGFloat(detailWidth), max: 1400)
         }
     }
 
@@ -77,15 +78,15 @@ private struct SidebarFooter: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Image(systemName: "gear")
+            Image(systemName: "checkmark.seal")
                 .foregroundStyle(.secondary)
             if let s = store.testSummary {
-                Text("\(s.passed) \(s.failed)")
+                Text("\(s.passed)/\(s.total)")
                     .font(.system(.caption, design: .monospaced))
-                    .foregroundStyle(s.allGreen ? .green : .red)
+                    .foregroundStyle(s.allGreen ? .green : .orange)
             } else {
-                Text("no test data")
-                    .font(.caption)
+                Text("—")
+                    .font(.system(.caption, design: .monospaced))
                     .foregroundStyle(.secondary)
             }
         }

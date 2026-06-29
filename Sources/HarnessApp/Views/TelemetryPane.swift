@@ -24,15 +24,9 @@ struct TelemetryPane: View {
     }
 
     private var header: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("NCode Usage Telemetry")
-                    .font(.title3.bold())
-                Text("Aggregated from \(sessions.count) sessions in ~/.ncode/usage-data/")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
+        PaneHeader("NCode Usage Telemetry",
+                    systemImage: "chart.xyaxis.line",
+                    subtitle: "Aggregated from \(sessions.count) sessions in ~/.ncode/usage-data/") {
             Button { Task { await loadSessions() } } label: {
                 Label("Refresh", systemImage: "arrow.clockwise")
             }
