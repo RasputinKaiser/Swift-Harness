@@ -167,16 +167,27 @@ private struct TranscriptRow: View {
                         .font(.caption2.bold())
                         .foregroundStyle(tint)
                 }
-                Text(event.shortText.isEmpty ? "(no text)" : event.shortText)
-                    .font(.system(.caption, design: .monospaced))
-                    .textSelection(.enabled)
-                    .lineLimit(8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                renderEventText
             }
         }
         .padding(.vertical, 2)
         .padding(.horizontal, 6)
         .background(rowBackground, in: RoundedRectangle(cornerRadius: 4))
+    }
+
+    @ViewBuilder
+    private var renderEventText: some View {
+        let text = event.shortText.isEmpty ? "(no text)" : event.shortText
+        // JSON syntax-coloring when content looks like JSON, else plain text.
+        if text.hasPrefix("{") || text.hasPrefix("[") {
+            JSONSyntaxText(text)
+        } else {
+            Text(text)
+                .font(.system(.caption, design: .monospaced))
+                .textSelection(.enabled)
+                .lineLimit(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     private var tint: Color {
