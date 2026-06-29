@@ -4,7 +4,7 @@ import Observation
 /// Discovered NCode project (one per directory ever invoked from).
 ///
 /// Projects live one level under ~/.ncode/projects/ as encoded path names
-/// (e.g. -Users-ianzvirbulis--ncode). The original cwd is recoverable by
+/// (e.g. -Users-raltouser--ncode). The original cwd is recoverable by
 /// reversing the encoding: leading '-' becomes '/', subsequent '-' becomes '/'.
 struct HarnessProject: Identifiable, Hashable {
     let encodedPath: String
@@ -23,7 +23,7 @@ struct HarnessProject: Identifiable, Hashable {
     }
 
     /// Decode the encoded path back to its original form.
-    /// "-Users-ianzvirbulis--ncode" → "/Users/ianzvirbulis/.ncode"
+    /// "-Users-raltouser--ncode" -> "/Users/raltouser/.ncode"
     static func decode(_ encoded: String) -> String {
         guard encoded.hasPrefix("-") else { return encoded }
         return "/" + encoded.dropFirst().replacingOccurrences(of: "-", with: "/")

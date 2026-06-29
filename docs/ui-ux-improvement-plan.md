@@ -4,7 +4,7 @@ Date: 2026-06-29
 
 ## Evidence Boundary
 
-This plan is based on the real SwiftPM source checkout at `/Users/ianzvirbulis/Code/harness-app`, the packaged app at `/Users/ianzvirbulis/Applications/harness-app/HarnessApp.app`, and live Computer Use inspection of bundle id `com.rasputinkaiser.harnessapp`.
+This plan is based on the real SwiftPM source checkout at `$HOME/Code/harness-app`, the packaged app at `$HOME/Applications/harness-app/HarnessApp.app`, and live Computer Use inspection of bundle id `com.rasputinkaiser.harnessapp`.
 
 The original source is not in `.ncode`. `.ncode` is the runtime data/control surface that Harness App reads and mutates: scripts, sessions, snapshots, hook events, usage data, eval cases, memory archive state, and plugin install cache.
 

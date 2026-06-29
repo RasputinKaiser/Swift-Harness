@@ -25,7 +25,7 @@ struct SessionDescriptor: Identifiable, Hashable, Codable {
 
     /// Encoded project path under ~/.ncode/projects/. Mirrors Claude Code's encoding.
     var encodedProjectPath: String {
-        // Replace each '/' with '-' (leading '/' becomes leading '-'), matches -Users-ianzvirbulis- pattern.
+        // Replace each "/" with "-" (leading "/" becomes leading "-").
         cwd.map { $0 == "/" ? "-" : String($0) }.joined()
     }
 

@@ -3,7 +3,7 @@ project: harness-app
 updated_at: "2026-06-29T21:33:57Z"
 status: repo_hygiene_verified
 source:
-  path: "/Users/ianzvirbulis/Code/harness-app"
+  path: "$HOME/Code/harness-app"
   kind: "SwiftPM macOS app"
   git_branch: "main"
   git_tracking: "origin/main"
@@ -11,14 +11,14 @@ source:
   license: "MIT"
   public_author: "RasputinKaiser"
 runtime_data:
-  ncode_dir: "/Users/ianzvirbulis/.ncode"
+  ncode_dir: "$HOME/.ncode"
   role: "Harness runtime data and installed plugin surface; not the app source checkout."
 packaged_app:
-  path: "/Users/ianzvirbulis/Applications/harness-app/HarnessApp.app"
+  path: "$HOME/Applications/harness-app/HarnessApp.app"
   bundle_id: "com.rasputinkaiser.harnessapp"
   version: "0.7.0-dev"
 ui_ux_plan:
-  artifact: "/Users/ianzvirbulis/Code/harness-app/docs/ui-ux-improvement-plan.md"
+  artifact: "$HOME/Code/harness-app/docs/ui-ux-improvement-plan.md"
   first_slice:
     - "sidebar job-to-be-done regrouping"
     - "StatusPane health strip and attention-needed triage"
