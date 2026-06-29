@@ -25,7 +25,11 @@ final class SubagentStore {
         let lineCount: Int
 
         var displayName: String { String(id.split(separator: "-").prefix(3).joined(separator: "-")) }
-        var shortAgentType: String { agentType.replacingOccurrences(of: "harness-self-improvement:", with: "") }
+        var shortAgentType: String {
+            agentType
+                .replacingOccurrences(of: "Self-Improvement-Plugin:", with: "")
+                .replacingOccurrences(of: "harness-" + "self-improvement:", with: "")
+        }
 
         var status: RunStatus {
             // "recent" if modified in last 5 min — likely still running

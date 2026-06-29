@@ -24,7 +24,7 @@ struct ChatSplitView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             if store.browserModel.url == nil {
-                store.browserModel.load(URL(string: "https://github.com/RasputinKaiser/harness-self-improvement")!)
+                store.browserModel.load(URL(string: "https://github.com/RasputinKaiser/Self-Improvement-Plugin")!)
             }
         }
     }

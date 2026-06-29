@@ -1,6 +1,6 @@
 # Harness App
 
-Native macOS SwiftUI GUI for the [harness-self-improvement](https://github.com/RasputinKaiser/harness-self-improvement) plugin. Reads `.ncode` harness state, drives local harness scripts via subprocess, and provides desktop panes for chat, projects, telemetry, memory, snapshots, hooks, plugins, templates, evals, and the in-app browser.
+Native macOS SwiftUI GUI for the [Self-Improvement-Plugin](https://github.com/RasputinKaiser/Self-Improvement-Plugin) plugin. Reads `.ncode` harness state, drives local harness scripts via subprocess, and provides desktop panes for chat, projects, telemetry, memory, snapshots, hooks, plugins, templates, evals, and the in-app browser.
 
 ## Status
 
@@ -18,6 +18,12 @@ script/make_app_bundle.sh
 ```
 
 Requires Swift 5.9+ and macOS 14+. No Xcode project file — SwiftPM-only.
+
+## Demo Video
+
+[Watch the 24fps Swift Harness overview video](docs/video/swift-harness-launch/renders/swift-harness-launch.mp4)
+
+The source composition lives in `docs/video/swift-harness-launch/`. It uses real Harness App screenshots across Status, Plugin Drift, Memory Fabric, Eval, and Agents panes, plus cards for every Self-Improvement-Plugin slash command.
 
 ## Architecture
 

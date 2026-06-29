@@ -1,7 +1,7 @@
 version: 1
 project: harness-app
-updated_at: "2026-06-29T21:33:57Z"
-status: repo_hygiene_verified
+updated_at: "2026-06-29T22:40:59Z"
+status: github_ready_video_added
 source:
   path: "$HOME/Code/harness-app"
   kind: "SwiftPM macOS app"
@@ -28,12 +28,19 @@ verification:
   build: "swift build"
   run: "script/build_and_run.sh"
   package: "script/make_app_bundle.sh"
+  video: "docs/video/swift-harness-launch/renders/swift-harness-launch.mp4"
   current_pass:
     - "git fetch --prune origin"
     - "git rev-list --left-right --count HEAD...origin/main == 0 0"
     - "LICENSE is MIT and attributed to RasputinKaiser"
-    - "swift build passed on 2026-06-29T21:32:56Z"
-    - "script/make_app_bundle.sh passed on 2026-06-29T21:33:57Z"
+    - "swift build passed on 2026-06-29T22:36Z"
+    - "script/make_app_bundle.sh passed on 2026-06-29T22:40Z"
+    - "Captured real Harness App panes for Status, Plugin Drift, Memory Fabric, Eval, and Agents."
+    - "npx hyperframes lint completed with no errors; two non-blocking structure warnings remain."
+    - "npx hyperframes validate completed with no console errors."
+    - "npx hyperframes inspect completed with zero layout issues."
+    - "Rendered 1280x720 MP4 at 24fps, 30.0s, 720 frames, 1010878 bytes."
   current_notes:
     - "Fixed AppStorage column-width storage from CGFloat to Double so the current local UI edits compile."
     - "Fixed bundle signing to pass entitlements via a temporary plist instead of stdin fallback."
+    - "Added GitHub-ready HyperFrames video with multiple app screenshots and command cards."

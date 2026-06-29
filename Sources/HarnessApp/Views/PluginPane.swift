@@ -36,7 +36,7 @@ struct PluginPane: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
-                Text("harness-self-improvement")
+                Text("Self-Improvement-Plugin")
                     .font(.title2.bold())
                 if let m = store.pluginMirror.manifest {
                     Text("v\(m.shortCommit)")
@@ -51,7 +51,7 @@ struct PluginPane: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                Text("Not installed yet — run `install.sh` from `~/Code/harness-self-improvement/`.")
+                Text("Not installed yet — run `install.sh` from the Self-Improvement-Plugin checkout.")
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
@@ -105,7 +105,7 @@ struct PluginPane: View {
             }
             .buttonStyle(.borderedProminent)
             .disabled(store.pluginMirror.isInstalling)
-            .help("Runs install.sh to sync source repo → install cache")
+            .help("Runs install.sh to sync source repo to install cache")
 
             Button {
                 Task {
@@ -160,7 +160,7 @@ struct PluginPane: View {
             ContentUnavailableView(
                 "No manifest yet",
                 systemImage: "tray",
-                description: Text("Run install.sh once from ~/Code/harness-self-improvement/ to populate ~/.ncode/.harness.installed.json")
+                description: Text("Run install.sh once from \(store.pluginMirror.sourceRepoPath) to populate ~/.ncode/.harness.installed.json")
             )
         }
     }

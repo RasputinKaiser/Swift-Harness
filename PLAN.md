@@ -4,7 +4,7 @@ Phased plan to evolve `harness-app` from v0.1.0-dev into a production-quality na
 
 Based on actual repo state (verified, not assumed):
 - `~/Code/harness-app/` SwiftPM project, 7 source files, builds in 2.4s
-- 28 scripts at `~/Code/harness-self-improvement/scripts/`
+- 28 scripts at the Self-Improvement-Plugin checkout's `scripts/` directory
 - Live data: `~/.ncode/{improvements.md,backups/snapshots/,continuity/,sessions/*.json}`
 - Sessions transcript: `~/.ncode/projects/<encoded-cwd>/<sessionId>.jsonl` (per-line: `assistant`/`user`/`file-history-snapshot` entries)
 - Codex.app at `/Applications/Codex.app` is Electron (opaque JS, no source available to cite); patterns below grounded in well-known SwiftUI idioms
@@ -67,14 +67,14 @@ Based on actual repo state (verified, not assumed):
 
 ## Phase 4 — Plugin Marketplace Mirror (Drift Detection)
 
-**Goal:** Detect when installed harness (`~/.ncode/scripts/`) drifts from source repo at `~/Code/harness-self-improvement/`, prompt reinstall.
+**Goal:** Detect when installed harness (`~/.ncode/scripts/`) drifts from the Self-Improvement-Plugin source repo, prompt reinstall.
 
 **Deliverables**
-- `Sources/HarnessApp/Services/PluginMirrorStore.swift` — `@Observable`, computes hash-by-hash drift against `~/Code/harness-self-improvement/scripts/*.py` and `hooks/hooks.json`, plus live snapshot at install time tracked via `~/.ncode/.harness.installed.json`
+- `Sources/HarnessApp/Services/PluginMirrorStore.swift` — `@Observable`, computes hash-by-hash drift against the Self-Improvement-Plugin `scripts/*.py` files and `hooks/hooks.json`, plus live snapshot at install time tracked via `~/.ncode/.harness.installed.json`
 - `Sources/HarnessApp/Views/PluginPane.swift` — top: installed vs source per-file drift chips. "Drift detected" banner when any sha256 diverges. Toolbar: "View diff" (opens offending file in `WebView` showing `file:///` diff via tiny HTML template), "Reinstall…" (confirmation sheet runs new `install.sh`)
 - Update `SidebarSection` to add `.plugin` before `.browser`
 
-**New harness-side artifacts:** `install.sh` at root of `harness-self-improvement` that copies scripts to `~/.ncode/scripts/`, merges `hooks/hooks.json` into `~/.ncode/settings.local.json`, overwrites `~/.ncode/.harness.installed.json` with `{commit, ts, files:{name:sha256}}`. None exists yet.
+**New harness-side artifacts:** `install.sh` at the Self-Improvement-Plugin root that copies scripts to `~/.ncode/scripts/`, merges `hooks/hooks.json` into `~/.ncode/settings.local.json`, overwrites `~/.ncode/.harness.installed.json` with `{commit, ts, files:{name:sha256}}`. None exists yet.
 
 **UX:** Drift banner mirrors Codex App plugin-update toast. Confirmation sheet mirrors its reinstall dialog. Diff preview reuses `WKWebView` from `BrowserPane`.
 

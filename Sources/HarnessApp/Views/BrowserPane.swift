@@ -3,7 +3,7 @@ import WebKit
 import AppKit
 
 struct BrowserPane: View {
-    @State private var urlText: String = "https://github.com/RasputinKaiser/harness-self-improvement"
+    @State private var urlText: String = "https://github.com/RasputinKaiser/Self-Improvement-Plugin"
     @State private var webView = WebViewModel()
     @FocusState private var urlFieldFocused: Bool
 

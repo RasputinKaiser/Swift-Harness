@@ -206,7 +206,7 @@ struct ManifestPane: View {
         HStack(spacing: 8) {
             Image(systemName: "info.circle")
                 .foregroundStyle(.secondary)
-            Text("Read-only view — edit surfaces in the source repo at ~/Code/harness-self-improvement/")
+            Text("Read-only view - edit surfaces in the Self-Improvement-Plugin source repo.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Spacer()
