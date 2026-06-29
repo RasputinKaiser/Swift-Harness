@@ -1,0 +1,10 @@
+[environment]
+name = "harness-app"
+description = "Native macOS SwiftUI GUI for the harness-self-improvement plugin."
+type = "shell"
+root = ".."
+
+[environment.commands]
+build = "swift build"
+run = "swift run HarnessApp"
+test = "swift build && script/build_and_run.sh"
