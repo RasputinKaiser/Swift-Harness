@@ -42,12 +42,12 @@ struct TestsPane: View {
             Spacer()
 
             if let s = store.testSummary {
-                Label("\(s.passed) pass", systemImage: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                    .font(.system(.callout, design: .monospaced))
-                Label("\(s.failed) fail", systemImage: s.failed == 0 ? "circle" : "exclamationmark.triangle.fill")
-                    .foregroundStyle(s.failed == 0 ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.red))
-                    .font(.system(.callout, design: .monospaced))
+                StatusBadge(.pass, text: "\(s.passed)")
+                if s.failed == 0 {
+                    StatusBadge(.pending, text: "0 fail", iconOnly: false)
+                } else {
+                    StatusBadge(.fail, text: "\(s.failed)")
+                }
             }
         }
         .padding(.horizontal, 16)
@@ -74,11 +74,14 @@ struct TestsPane: View {
     }
 
     private func statusBar(_ r: HarnessClient.RunResult) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: r.ok ? "checkmark.circle.fill" : "xmark.octagon.fill")
-                .foregroundStyle(r.ok ? .green : .red)
+        let status: StatusKind = r.ok ? .pass : .fail
+        return HStack(spacing: 8) {
+            Image(systemName: StatusTheme.icon(for: status))
+                .foregroundStyle(StatusTheme.color(for: status))
+                .font(.headline)
             Text(r.ok ? "PASSED" : "FAILED")
                 .font(.system(.headline, design: .monospaced))
+                .foregroundStyle(StatusTheme.color(for: status))
             Spacer()
             Text(String(format: "%.1fs", r.duration))
                 .font(.caption.monospacedDigit())
