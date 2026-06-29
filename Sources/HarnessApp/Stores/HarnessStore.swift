@@ -58,6 +58,9 @@ final class HarnessStore {
     /// Voice input manager for hold-to-talk dictation.
     var voice = VoiceInputManager()
 
+    /// Voice output manager — reads assistant responses aloud via AVSpeechSynthesizer.
+    var voiceOut = VoiceOutputManager()
+
     /// Shared WKWebView model for the companion browser in ChatSplitView.
     var browserModel = WebViewModel()
 

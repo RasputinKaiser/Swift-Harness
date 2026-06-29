@@ -26,6 +26,14 @@ struct ChatPane: View {
             composer
         }
         .navigationTitle("Chat")
+        .onChange(of: store.bridge.events.last?.id) { _, _ in
+            // Auto-speak: when toggle is on, speak the latest assistant text
+            // as soon as it arrives. Avoids re-speaking on row updates by
+            // gating on isSpeaking (don't queue duplicates).
+            guard store.voiceOut.isAutoSpeakOn, !store.voiceOut.isSpeaking,
+                  let lastText = latestAssistantText() else { return }
+            store.voiceOut.speak(text: lastText)
+        }
         .sheet(item: planItemBinding) { plan in
             PlanApprovalSheet(plan: plan.text)
         }
@@ -46,6 +54,11 @@ struct ChatPane: View {
                                 }
                             }
                         }
+                    ))
+                    Divider()
+                    Toggle("Auto-Speak Responses", isOn: Binding(
+                        get: { store.voiceOut.isAutoSpeakOn },
+                        set: { _ in store.voiceOut.toggleAutoSpeak() }
                     ))
                 } label: {
                     Label("Session", systemImage: "ellipsis.circle")
@@ -190,6 +203,9 @@ struct ChatPane: View {
                 // Hold-to-talk voice button
                 voiceButton
 
+                // Speak-latest-response button (one-shot + auto-speak toggle)
+                speakerButton
+
                 Button {
                     send()
                 } label: {
@@ -205,6 +221,44 @@ struct ChatPane: View {
             .padding(.vertical, 10)
         }
         .background(.thinMaterial)
+    }
+
+    @ViewBuilder
+    private var speakerButton: some View {
+        Button {
+            // If speaking → stop. Otherwise speak the latest assistant text.
+            if store.voiceOut.isSpeaking {
+                store.voiceOut.stop()
+            } else if let lastText = latestAssistantText() {
+                store.voiceOut.speak(text: lastText)
+            }
+        } label: {
+            Image(systemName: store.voiceOut.isAutoSpeakOn ? "speaker.wave.3.fill"
+                : store.voiceOut.isSpeaking ? "speaker.wave.2.fill"
+                : "speaker.wave.1.fill")
+                .font(.system(size: 28))
+                .foregroundStyle(store.voiceOut.isAutoSpeakOn ? Color.accentColor
+                    : store.voiceOut.isSpeaking ? Color.green : Color.secondary)
+                .symbolEffect(.bounce, value: store.voiceOut.isSpeaking)
+        }
+        .buttonStyle(.plain)
+        .help(store.voiceOut.isAutoSpeakOn ? "Auto-speak on — disable in Session menu" :
+            store.voiceOut.isSpeaking ? "Speaking — tap to stop" :
+            "Tap to read latest response aloud")
+        .disabled(!store.bridge.isRunning)
+    }
+
+    private func latestAssistantText() -> String? {
+        for ev in store.bridge.events.reversed() {
+            if case .assistant(let blocks, _, _) = ev {
+                for block in blocks {
+                    if case .text(let s) = block, !s.isEmpty {
+                        return s
+                    }
+                }
+            }
+        }
+        return nil
     }
 
     @ViewBuilder
