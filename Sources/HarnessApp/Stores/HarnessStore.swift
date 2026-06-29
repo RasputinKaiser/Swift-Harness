@@ -52,6 +52,9 @@ final class HarnessStore {
     /// Subagent run catalog. Backs Agents pane.
     var subagents = SubagentStore()
 
+    /// Prompt template library. Backs Templates pane.
+    var templates = PromptTemplateStore()
+
     /// Shared WKWebView model for the companion browser in ChatSplitView.
     var browserModel = WebViewModel()
 
