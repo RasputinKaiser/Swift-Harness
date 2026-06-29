@@ -27,7 +27,7 @@ final class EvalCaseStore {
     }
 
     /// Look up a case by id.
-    func case(byId id: String) -> EvalCase? {
+    func find(byId id: String) -> EvalCase? {
         cases.first { $0.id == id }
     }
 
