@@ -34,6 +34,9 @@ final class HarnessStore {
     /// Hook-event tailer. Backs HooksPane.
     var hookEvents = HookEventStore()
 
+    /// Plugin drift detector. Backs PluginPane.
+    var pluginMirror = PluginMirrorStore()
+
     // MARK: - Init
 
     init() {
