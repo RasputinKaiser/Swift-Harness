@@ -37,7 +37,7 @@ struct ContentView: View {
         case .snapshots: SnapshotsPane()
         case .memory: MemoryPane()
         case .journal: JournalPane()
-        case .hooks: HooksPlaceholder()
+        case .hooks: HooksPane()
         case .browser: BrowserPane()
         case .none: ContentUnavailableView(
             "Select a section",
@@ -45,16 +45,6 @@ struct ContentView: View {
             description: Text("Pick a section from the sidebar.")
         )
         }
-    }
-}
-
-private struct HooksPlaceholder: View {
-    var body: some View {
-        ContentUnavailableView(
-            "Hook event feed coming in Phase 3",
-            systemImage: "fork.arrow.up.right.down",
-            description: Text("See harness-app/PLAN.md — once `hook_event_tap.py` is added to the harness plugin, this pane will show live hook firings.")
-        )
     }
 }
 

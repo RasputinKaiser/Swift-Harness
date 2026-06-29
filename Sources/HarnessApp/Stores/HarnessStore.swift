@@ -31,6 +31,9 @@ final class HarnessStore {
     /// Snapshot catalog. Used by SnapshotsPane.
     var snapshotStore = SnapshotStore()
 
+    /// Hook-event tailer. Backs HooksPane.
+    var hookEvents = HookEventStore()
+
     // MARK: - Init
 
     init() {
