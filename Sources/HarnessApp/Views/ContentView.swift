@@ -33,6 +33,7 @@ struct ContentView: View {
         switch selection {
         case .projects: ProjectsView()
         case .agents: AgentsPane()
+        case .computer: ComputerPane()
         case .status: StatusPane()
         case .tests: TestsPane()
         case .snapshots: SnapshotsPane()

@@ -8,6 +8,8 @@ struct HookEvent: Identifiable, Hashable, Codable {
     let ts: String
     let event: String
     let script: String
+    let toolName: String?
+    let toolInputPreview: String?
     let exitCode: Int
     let durationMs: Int
     let outcome: Outcome
@@ -43,6 +45,7 @@ struct HookEvent: Identifiable, Hashable, Codable {
 
     private enum CodingKeys: String, CodingKey {
         case id, ts, event, script
+        case toolName, toolInputPreview
         case exitCode, durationMs, outcome
         case stdoutPreview, stderrPreview
     }

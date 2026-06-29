@@ -1,7 +1,7 @@
 import Foundation
 
 enum SidebarSection: String, CaseIterable, Identifiable, Hashable {
-    case projects, agents, status, tests, snapshots, plugin, manifest, memory, journal, hooks, browser
+    case projects, agents, computer, status, tests, snapshots, plugin, manifest, memory, journal, hooks, browser
 
     var id: String { rawValue }
 
@@ -9,6 +9,7 @@ enum SidebarSection: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .projects: "Projects"
         case .agents: "Agents"
+        case .computer: "Computer"
         case .status: "Status"
         case .tests: "Tests"
         case .snapshots: "Snapshots"
@@ -25,6 +26,7 @@ enum SidebarSection: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .projects: "folder"
         case .agents: "person.2.fill"
+        case .computer: "macwindow"
         case .status: "speedometer"
         case .tests: "checkmark.seal"
         case .snapshots: "archivebox"
