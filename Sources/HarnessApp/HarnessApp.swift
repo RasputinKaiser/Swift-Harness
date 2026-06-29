@@ -4,6 +4,8 @@ import SwiftUI
 struct HarnessApp: App {
     @State private var store = HarnessStore()
 
+    init() { AppLogger.bootstrap() }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -49,7 +51,8 @@ private struct SettingsView: View {
                 }
             }
             Section("About") {
-                LabeledContent("Version", value: "0.1.0-dev")
+                LabeledContent("Version", value: Version.displayString)
+                LabeledContent("Build", value: Version.build)
                 LabeledContent("Author", value: "RasputinKaiser")
             }
         }
