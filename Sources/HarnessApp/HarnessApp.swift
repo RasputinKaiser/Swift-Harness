@@ -15,7 +15,7 @@ struct HarnessApp: App {
         WindowGroup {
             ContentView()
                 .environment(store)
-                .frame(minWidth: 1080, minHeight: 680)
+                .frame(minWidth: 1200, minHeight: 700)
                 .frame(idealWidth: 1400, idealHeight: 900)
         }
         .defaultSize(width: 1280, height: 820)

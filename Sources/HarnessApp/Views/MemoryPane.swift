@@ -7,6 +7,7 @@ struct MemoryPane: View {
     var body: some View {
         NavigationSplitView {
             sidebar
+                .navigationSplitViewColumnWidth(min: 260, ideal: 300, max: 420)
                 .navigationTitle("Memory Fabric")
                 .navigationSubtitle("\(store.memory.records.count) of \(store.memory.totalCount)")
         } detail: {

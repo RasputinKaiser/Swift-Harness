@@ -27,11 +27,15 @@ struct TelemetryPane: View {
         PaneHeader("NCode Usage Telemetry",
                     systemImage: "chart.xyaxis.line",
                     subtitle: "Aggregated from \(sessions.count) sessions in ~/.ncode/usage-data/") {
-            Button { Task { await loadSessions() } } label: {
+            Button(action: refresh) {
                 Label("Refresh", systemImage: "arrow.clockwise")
             }
             .buttonStyle(.bordered)
         }
+    }
+
+    private func refresh() {
+        Task { await loadSessions() }
     }
 
     // MARK: - Summary
@@ -203,27 +207,6 @@ struct SessionTelemetry: Identifiable {
     }
 }
 
-private struct MetricCard: View {
-    let title: String
-    let value: String
-    let systemImage: String
-    let tint: Color
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: systemImage).foregroundStyle(tint)
-                Text(title).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-            }
-            Text(value)
-                .font(.system(.title, design: .rounded).bold())
-                .monospacedDigit()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-    }
-}
 
 private struct SessionTelemetryRow: View {
     let session: SessionTelemetry

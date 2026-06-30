@@ -2,7 +2,7 @@ import SwiftUI
 
 struct PluginPane: View {
     @Environment(HarnessStore.self) private var store
-    @State private var showReinstallSheet = false
+    @State private var reinstallTarget: PluginInstallManifest?
     @State private var rawCheckOutput: String?
 
     var body: some View {
@@ -21,13 +21,11 @@ struct PluginPane: View {
                 store.pluginMirror.refresh()
             }
         }
-        .sheet(isPresented: $showReinstallSheet) {
-            if let m = store.pluginMirror.manifest {
-                ReinstallSheet(manifest: m, drift: store.pluginMirror.drift) {
-                    Task {
-                        await store.pluginMirror.reinstall()
-                        showReinstallSheet = false
-                    }
+        .sheet(item: $reinstallTarget) { m in
+            ReinstallSheet(manifest: m, drift: store.pluginMirror.drift) {
+                Task {
+                    await store.pluginMirror.reinstall()
+                    reinstallTarget = nil
                 }
             }
         }
@@ -99,19 +97,15 @@ struct PluginPane: View {
     private var actions: some View {
         HStack(spacing: 10) {
             Button {
-                Task { await store.pluginMirror.reinstall() }
+                reinstallTarget = store.pluginMirror.manifest
             } label: {
                 Label("Reinstall", systemImage: "arrow.triangle.2.circlepath")
             }
             .buttonStyle(.borderedProminent)
-            .disabled(store.pluginMirror.isInstalling)
+            .disabled(store.pluginMirror.isInstalling || store.pluginMirror.manifest == nil)
             .help("Runs install.sh to sync source repo to install cache")
 
-            Button {
-                Task {
-                    rawCheckOutput = await store.pluginMirror.checkDrift()
-                }
-            } label: {
+            Button(action: checkDrift) {
                 Label("Check drift", systemImage: "magnifyingglass")
             }
             .buttonStyle(.bordered)
@@ -126,6 +120,10 @@ struct PluginPane: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
+    }
+
+    private func checkDrift() {
+        Task { rawCheckOutput = await store.pluginMirror.checkDrift() }
     }
 
     @ViewBuilder

@@ -12,6 +12,7 @@ struct SkillsPane: View {
     var body: some View {
         NavigationSplitView {
             list
+                .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 360)
                 .navigationTitle("Skills")
                 .navigationSubtitle("\(skills.count) installed")
                 .toolbar {

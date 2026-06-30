@@ -10,14 +10,21 @@ struct BrowserPane: View {
     var body: some View {
         VStack(spacing: 0) {
             toolbar
-            Divider()
+            if webView.isLoading {
+                ProgressView(value: webView.estimatedProgress)
+                    .progressViewStyle(.linear)
+                    .frame(height: 2)
+                    .padding(0)
+            } else {
+                Divider()
+            }
             WebView(webView: webView)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             Divider()
             statusBar
         }
         .navigationTitle("Browser")
-        .onAppear { webView.load(URL(string: urlText)!) }
+        .task { if let url = resolveURL(urlText) { webView.load(url) } }
     }
 
     private var toolbar: some View {

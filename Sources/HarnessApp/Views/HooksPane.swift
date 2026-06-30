@@ -18,7 +18,7 @@ struct HooksPane: View {
             Divider()
             footer
         }
-        .navigationTitle(" Hook Events")
+        .navigationTitle("Hook Events")
         .task { store.hookEvents.start() }
         .onDisappear { store.hookEvents.detach() }
     }

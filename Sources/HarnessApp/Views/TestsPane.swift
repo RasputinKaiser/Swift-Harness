@@ -16,19 +16,23 @@ struct TestsPane: View {
         .navigationTitle("Tests")
     }
 
+    private func run() {
+        Task { await store.runTests() }
+    }
+
+    private func refresh() {
+        Task { await store.refreshStatus() }
+    }
+
     private var toolbar: some View {
         HStack(spacing: 10) {
-            Button {
-                Task { await store.runTests() }
-            } label: {
+            Button(action: run) {
                 Label("Run", systemImage: "play.fill")
             }
             .buttonStyle(.borderedProminent)
             .disabled(store.isRunningTests)
 
-            Button {
-                Task { await store.refreshStatus() }
-            } label: {
+            Button(action: refresh) {
                 Label("Refresh", systemImage: "arrow.clockwise")
             }
             .buttonStyle(.bordered)
@@ -70,7 +74,7 @@ struct TestsPane: View {
                 systemImage: "checkmark.seal",
                 description: "Run the 73 regression tests in ~/.ncode/scripts/run_tests.py",
                 actionTitle: store.isRunningTests ? nil : "Run tests now",
-                action: store.isRunningTests ? nil : { Task { await store.runTests() } },
+                action: store.isRunningTests ? nil : run,
                 secondaryInfo: "~/.ncode/scripts/run_tests.py"
             )
         }

@@ -40,9 +40,9 @@ struct ChatPane: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    Button("Stop chat", role: .destructive) { Task { await store.bridge.stop() } }
+                    Button("Stop chat", role: .destructive, action: stopSession)
                         .disabled(!store.bridge.isRunning)
-                    Button("Clear transcript") { Task { @MainActor in store.bridge.clear() } }
+                    Button("Clear transcript", action: clearTranscript)
                     Divider()
                     Toggle("Plan Mode", isOn: Binding(
                         get: { store.bridge.isPlanMode },
@@ -83,9 +83,7 @@ struct ChatPane: View {
                         .font(.caption2.bold())
                         .foregroundStyle(.green)
                 }
-                Button {
-                    Task { await store.bridge.interrupt() }
-                } label: {
+                Button(action: interrupt) {
                     Label("Stop", systemImage: "stop.fill")
                 }
                 .buttonStyle(.bordered)
@@ -99,9 +97,7 @@ struct ChatPane: View {
                     .font(.caption2)
                     .foregroundStyle(.orange)
             } else {
-                Button {
-                    Task { await store.bridge.start(cwd: nil) }
-                } label: {
+                Button(action: startSession) {
                     Label("Start NCode session", systemImage: "play.fill")
                 }
                 .buttonStyle(.borderedProminent)
@@ -255,28 +251,7 @@ struct ChatPane: View {
 
     @ViewBuilder
     private var voiceButton: some View {
-        Button {
-            // Toggle: if recording, stop + send; if not, start
-            if store.voice.isRecording {
-                Task { @MainActor in
-                    store.voice.stopRecording()
-                    let text = store.voice.finalizeTranscription()
-                    if !text.isEmpty && store.bridge.isRunning {
-                        store.bridge.send(text)
-                    }
-                }
-            } else {
-                Task {
-                    let ok = await store.voice.requestAuthorization()
-                    if ok {
-                        Task { @MainActor in
-                            store.voice.startRecording()
-                            draft = ""
-                        }
-                    }
-                }
-            }
-        } label: {
+        Button(action: toggleVoice) {
             Image(systemName: store.voice.isRecording ? "stop.circle.fill" : "mic.circle.fill")
                 .font(.system(size: 28))
                 .foregroundStyle(store.voice.isRecording ? Color.red : Color.secondary)
@@ -292,6 +267,29 @@ struct ChatPane: View {
         guard !text.isEmpty, store.bridge.isRunning else { return }
         store.bridge.send(text)
         draft = ""
+    }
+
+    private func startSession() { Task { await store.bridge.start(cwd: nil) } }
+    private func stopSession() { Task { await store.bridge.stop() } }
+    private func interrupt() { Task { await store.bridge.interrupt() } }
+    private func clearTranscript() { store.bridge.clear() }
+
+    private func toggleVoice() {
+        if store.voice.isRecording {
+            store.voice.stopRecording()
+            let text = store.voice.finalizeTranscription()
+            if !text.isEmpty && store.bridge.isRunning {
+                store.bridge.send(text)
+            }
+        } else {
+            Task {
+                let ok = await store.voice.requestAuthorization()
+                if ok {
+                    store.voice.startRecording()
+                    draft = ""
+                }
+            }
+        }
     }
 }
 

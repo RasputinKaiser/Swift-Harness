@@ -9,6 +9,7 @@ struct AgentsPane: View {
     var body: some View {
         NavigationSplitView {
             list
+                .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 360)
                 .navigationTitle("Agents")
                 .navigationSubtitle("\(store.subagents.subagents.count) runs")
                 .toolbar {
