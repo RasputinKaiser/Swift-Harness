@@ -7,7 +7,7 @@
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/W7W7C9TC7)
 
-Native macOS control surface for the [Self-Improvement-Plugin](https://github.com/RasputinKaiser/Self-Improvement-Plugin).
+Extremely Barebones, Experimental - Native macOS control surface for the [Self-Improvement-Plugin](https://github.com/RasputinKaiser/Self-Improvement-Plugin).
 
 **Suggested GitHub topics:** `swift`, `swiftui`, `macos`, `ai-agents`, `agent-harness`, `ncode`, `developer-tools`, `automation`, `evals`, `memory-fabric`
 
