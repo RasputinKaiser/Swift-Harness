@@ -3,20 +3,22 @@ import SwiftUI
 struct SnapshotsPane: View {
     @Environment(HarnessStore.self) private var store
     @State private var selectedHash: String?
-    @State private var showRestoreSheet = false
+    @State private var snapshotToRestore: Snapshot?
     @State private var showNewSnapshotSheet = false
     @State private var newSnapshotReason = ""
 
     var body: some View {
         NavigationSplitView {
             snapshotList
+                .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 340)
                 .navigationTitle("Snapshots")
                 .navigationSubtitle("\(store.snapshotStore.snapshots.count) total")
                 .toolbar { toolbarLeft }
         } detail: {
             if let snap = selectedSnapshot {
                 SnapshotDetail(snapshot: snap,
-                                diff: store.snapshotStore.diffsByHash[snap.hash] ?? [])
+                                diff: store.snapshotStore.diffsByHash[snap.hash] ?? [],
+                                onRestore: { snapshotToRestore = snap })
             } else {
                 ContentUnavailableView(
                     "Select a snapshot",
@@ -30,13 +32,11 @@ struct SnapshotsPane: View {
                 store.snapshotStore.refresh()
             }
         }
-        .sheet(isPresented: $showRestoreSheet) {
-            if let snap = selectedSnapshot {
-                RestoreConfirmationSheet(snapshot: snap) {
-                    Task {
-                        await store.snapshotStore.restore(hash: snap.hash)
-                        showRestoreSheet = false
-                    }
+        .sheet(item: $snapshotToRestore) { snap in
+            RestoreConfirmationSheet(snapshot: snap) {
+                Task {
+                    await store.snapshotStore.restore(hash: snap.hash)
+                    snapshotToRestore = nil
                 }
             }
         }
@@ -132,6 +132,7 @@ private struct SnapshotRow: View {
 private struct SnapshotDetail: View {
     let snapshot: Snapshot
     let diff: [SnapshotFileDiff]
+    let onRestore: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -152,9 +153,7 @@ private struct SnapshotDetail: View {
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showRestoreSheet = true
-                } label: {
+                Button(action: onRestore) {
                     Label("Restore…", systemImage: "arrow.uturn.backward.circle")
                 }
             }
@@ -209,8 +208,6 @@ private struct SnapshotDetail: View {
         .background(.thinMaterial)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
-
-    @State private var showRestoreSheet = false
 }
 
 private struct DiffRow: View {

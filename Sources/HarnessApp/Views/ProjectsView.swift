@@ -16,13 +16,13 @@ struct ProjectsView: View {
     var body: some View {
         NavigationSplitView {
             projectList
-                .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 320)
+                .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 340)
         } content: {
             sessionList
-                .navigationSplitViewColumnWidth(min: 240, ideal: 320, max: 420)
+                .navigationSplitViewColumnWidth(min: 280, ideal: 340, max: 440)
         } detail: {
             chatDetail
-                .navigationSplitViewColumnWidth(min: 500, ideal: 800)
+                .navigationSplitViewColumnWidth(min: 480, ideal: 700, max: 900)
         }
         .task {
             if store.projects.projects.isEmpty {

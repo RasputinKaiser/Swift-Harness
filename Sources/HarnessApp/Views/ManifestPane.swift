@@ -90,24 +90,15 @@ struct ManifestPane: View {
     }
 
     private var tabPicker: some View {
-        HStack(spacing: 0) {
+        Picker("Category", selection: $category) {
             ForEach(Category.allCases, id: \.self) { c in
-                Button {
-                    category = c
-                } label: {
-                    Label(c.label, systemImage: c.icon)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(category == c ? Color.accentColor : .secondary)
-                .background(category == c ? Color.accentColor.opacity(0.1) : Color.clear,
-                           in: RoundedRectangle(cornerRadius: 4))
+                Label(c.label, systemImage: c.icon).tag(c)
             }
-            Spacer()
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
     }
 
     private var searchField: some View {

@@ -21,7 +21,7 @@ struct JournalPane: View {
                         systemImage: "book",
                         description: "Run /improve to populate ~/.ncode/improvements.md with self-correction sweeps.",
                         actionTitle: "Refresh now",
-                        action: { Task { await reload() } },
+                        action: reloadAction,
                         secondaryInfo: "~/.ncode/improvements.md"
                     )
                     .padding(.top, 60)
@@ -52,9 +52,7 @@ struct JournalPane: View {
                 }
             }
             Spacer()
-            Button {
-                Task { await reload() }
-            } label: {
+            Button(action: reloadAction) {
                 Label("Reload", systemImage: "arrow.clockwise")
             }
             .buttonStyle(.bordered)
@@ -78,6 +76,10 @@ struct JournalPane: View {
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.thinMaterial)
+    }
+
+    private func reloadAction() {
+        Task { await reload() }
     }
 
     private func reload() async {

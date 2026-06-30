@@ -13,13 +13,9 @@ struct EvalPane: View {
     @Environment(HarnessStore.self) private var store
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                header
-                caseList
-            }
-            .padding(24)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        FullWidthPaneScaffold {
+            header
+            caseList
         }
         .navigationTitle("Eval")
         .toolbar {
@@ -29,9 +25,7 @@ struct EvalPane: View {
                 }
             }
         }
-        .onAppear {
-            // Guard: only refresh if no cases loaded yet — avoids re-reading
-            // JSON case files + results.jsonl on every pane switch.
+        .task {
             if store.evalCases.cases.isEmpty { refresh() }
         }
     }
@@ -182,6 +176,7 @@ private struct EvalCaseCard: View {
                         )
                 )
         )
+        .shadow(color: .black.opacity(0.04), radius: 4, y: 2)
         .onTapGesture { withAnimation(.easeInOut(duration: 0.15)) { expanded.toggle() } }
     }
 

@@ -15,13 +15,27 @@ struct StatusPane: View {
         .navigationTitle("Status")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    Task { await store.refreshStatus() }
-                } label: {
+                Button(action: refresh) {
                     Label("Refresh", systemImage: "arrow.clockwise")
                 }
             }
         }
+    }
+
+    private func refresh() {
+        Task { await store.refreshStatus() }
+    }
+
+    private func runTests() {
+        Task { await store.runTests() }
+    }
+
+    private func sweep() {
+        Task { await store.sweep() }
+    }
+
+    private func takeSnapshot() {
+        Task { await store.snapshot(reason: "via harness-app status pane") }
     }
 
     private var header: some View {
@@ -76,37 +90,28 @@ struct StatusPane: View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Latest self-correction entry", systemImage: "doc.text")
                 .font(.headline)
-            ScrollView {
-                Text(entry)
-                    .font(.system(.callout, design: .monospaced))
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(maxHeight: 220)
-            .padding(12)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: DesignRadius.medium, style: .continuous))
+            Text(entry)
+                .font(.system(.callout, design: .monospaced))
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: DesignRadius.medium, style: .continuous))
         }
     }
 
     private var actions: some View {
         HStack(spacing: 10) {
-            Button {
-                Task { await store.runTests() }
-            } label: {
+            Button(action: runTests) {
                 Label("Run Tests", systemImage: "play.fill")
             }
             .buttonStyle(.borderedProminent)
 
-            Button {
-                Task { await store.sweep() }
-            } label: {
+            Button(action: sweep) {
                 Label("Sweep (/improve)", systemImage: "sparkles")
             }
             .buttonStyle(.bordered)
 
-            Button {
-                Task { await store.snapshot(reason: "via harness-app status pane") }
-            } label: {
+            Button(action: takeSnapshot) {
                 Label("Snapshot", systemImage: "camera")
             }
             .buttonStyle(.bordered)
@@ -116,31 +121,5 @@ struct StatusPane: View {
             }
             Spacer()
         }
-    }
-}
-
-
-private struct MetricCard: View {
-    let title: String
-    let value: String
-    let systemImage: String
-    let tint: Color
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: systemImage)
-                    .foregroundStyle(tint)
-                Text(title)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            Text(value)
-                .font(.system(.title, design: .rounded).bold())
-                .monospacedDigit()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .materialCard(radius: DesignRadius.large, padding: 14)
     }
 }

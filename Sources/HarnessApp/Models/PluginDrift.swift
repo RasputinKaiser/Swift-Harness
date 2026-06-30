@@ -2,7 +2,8 @@ import Foundation
 import CryptoKit
 
 /// Decoded entry from ~/.ncode/.harness.installed.json, written by `install.sh`.
-struct PluginInstallManifest: Codable, Hashable {
+struct PluginInstallManifest: Codable, Hashable, Identifiable {
+    var id: String { commit }
     let commit: String
     let branch: String
     let installedAt: String
