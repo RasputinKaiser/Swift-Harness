@@ -4,6 +4,7 @@
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 ![Status: dev](https://img.shields.io/badge/status-dev-orange)
+
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/W7W7C9TC7)
 
 Native macOS control surface for the [Self-Improvement-Plugin](https://github.com/RasputinKaiser/Self-Improvement-Plugin).
